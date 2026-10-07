@@ -8,7 +8,7 @@ import type { PropType } from '../core/types';
 import type { PropBuilder, PropKit } from './props';
 import { drawClockFace, drawLedClock, drawLetterMask, type LetterBox } from './props.infra.tex';
 import { drawExtinguisherSign, drawSmallLabel, drawStreak } from './props.infra.tex2';
-import { PowerFade, brownout, decalMat, gameClock, gentle, halfSpanX, live, makeCnv, onMains, ownStd, powerOf, propSeed, sharedTex, switcher, texMat, toCeiling, toTexture } from './props.infra.util';
+import { signPlane, PowerFade, brownout, decalMat, gameClock, gentle, halfSpanX, live, makeCnv, onMains, ownStd, powerOf, propSeed, sharedTex, switcher, texMat, toCeiling, toTexture } from './props.infra.util';
 
 // ---------------------------------------------------------------------------
 // Clocks
@@ -18,7 +18,7 @@ function analogClock(k: PropKit): void {
   const R = k.num('radius', 0.165);
   const D = 0.055;
   const shell = k.std(0x1d1e20, 0.42, 0.1);
-  k.cyl(R * 0.97, R * 0.9, D * 0.8, shell, 0, 0, D * 0.4, { axis: 'z', seg: 32 });
+  k.cyl(R * 0.97, R * 0.9, D * 0.6, shell, 0, 0, D * 0.3, { axis: 'z', seg: 32 });
   k.torus(R - 0.009, 0.012, shell, 0, 0, D * 0.84, { seg: 40 });
   const face = texMat(k, 'clockface', () => sharedTex('clockface', drawClockFace), { roughness: 0.75 });
   k.mesh(k.geo(`infra:clockdisc:${R.toFixed(3)}`, () => new THREE.CircleGeometry(R - 0.012, 48)), face, 0, 0, D * 0.62, { cast: false });
@@ -136,7 +136,7 @@ const clock: PropBuilder = (k) => {
 function roomNumber(k: PropKit, text: string): void {
   const s = k.num('w', 0.22);
   k.rbox(s, s, 0.008, k.std(0x2b2f33, 0.5, 0.1), 0, 0, 0.004, 0.005);
-  k.sign(text, 'room_number', s - 0.01, s - 0.01, 0, 0, 0.0084);
+  signPlane(k, text, 'room_number', s - 0.01, s - 0.01, 0, 0, 0.0084);
 }
 
 function wayfinding(k: PropKit, text: string): void {
@@ -146,17 +146,17 @@ function wayfinding(k: PropKit, text: string): void {
   const alu = k.std(0x9a9fa4, 0.35, 0.8);
   if (k.bool('hanging', false)) {
     k.rbox(w, h, 0.03, anod, 0, 0, 0, 0.006);
-    k.sign(text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, 0.0155);
-    k.sign(text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, -0.0155, { ry: Math.PI });
+    signPlane(k, text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, 0.0155);
+    signPlane(k, text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, -0.0155, { ry: Math.PI });
     const up = toCeiling(k);
-    for (const x of [-w * 0.36, w * 0.36]) {
+    if (up > h / 2 + 0.02) for (const x of [-w * 0.36, w * 0.36]) {
       k.cyl(0.004, 0.004, up - h / 2, alu, x, (h / 2 + up) / 2, 0, { seg: 8 });
       k.cyl(0.025, 0.025, 0.008, alu, x, up - 0.004, 0, { seg: 16 });
     }
     return;
   }
   k.rbox(w, h, 0.03, anod, 0, 0, 0.015, 0.006);
-  k.sign(text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, 0.0305);
+  signPlane(k, text, 'wayfinding', w - 0.02, h - 0.02, 0, 0, 0.0305);
   k.box(w, 0.012, 0.034, alu, 0, h / 2 - 0.006, 0.017);
   k.box(w, 0.012, 0.034, alu, 0, -h / 2 + 0.006, 0.017);
 }
@@ -165,7 +165,7 @@ function deptSign(k: PropKit, text: string): void {
   const w = Math.min(k.num('w', 0.9), 2 * halfSpanX(k));
   const h = k.num('h', 0.3);
   k.rbox(w, h, 0.012, k.std(0xd9d6ce, 0.5, 0.05), 0, 0, 0.022, 0.004);
-  k.sign(text, 'dept', w - 0.008, h - 0.008, 0, 0, 0.0285);
+  signPlane(k, text, 'dept', w - 0.008, h - 0.008, 0, 0, 0.0285);
   const steel = k.std(0xb0b4b8, 0.3, 0.85);
   for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) k.cyl(0.009, 0.009, 0.03, steel, x * (w / 2 - 0.03), y * (h / 2 - 0.03), 0.015, { axis: 'z', seg: 12 });
 }
@@ -175,7 +175,7 @@ function warningSign(k: PropKit, text: string): void {
   const h = k.num('h', 0.36);
   const tilt = (k.rand() - 0.5) * 0.02;
   k.rbox(w, h, 0.003, k.std(0xa7a49a, 0.45, 0.5), 0, 0, 0.0015, 0.002, { rz: tilt });
-  k.sign(text, 'warning', w, h, 0, 0, 0.0032, { rz: tilt });
+  signPlane(k, text, 'warning', w, h, 0, 0, 0.0032, { rz: tilt });
   const screw = k.std(0x8e9296, 0.35, 0.8);
   const m = (h * 400 * 0.025 * 2.4) / 400;
   const c = Math.cos(tilt);
@@ -218,7 +218,11 @@ function channelLetters(k: PropKit, text: string): void {
   const W = k.num('w', 3.4);
   const H = k.num('h', 0.8);
   const { tex, boxes } = letterMask(text, 2048, 512, 900, 0.1);
-  k.rbox(W * 0.96, 0.16, 0.08, k.std(0x2a2422, 0.6, 0.35), 0, -H * 0.04, 0.04, 0.012);
+  const frame = k.std(0x2a2422, 0.6, 0.35);
+  k.rbox(W * 0.96, 0.16, 0.08, frame, 0, -H * 0.04, 0.04, 0.012);
+  // support frame: uprights and a bottom rail tie the raceway to whatever it is bolted over
+  for (const fx of [-W * 0.4, 0, W * 0.4]) k.box(0.05, H * 0.5, 0.03, frame, fx, -H * 0.31, 0.015);
+  k.box(W * 0.86, 0.04, 0.03, frame, 0, -H / 2 - 0.04, 0.015);
   const ret = k.shared(`infra:chan:ret:${text}`, () => new THREE.MeshStandardMaterial({ color: 0x2b1512, roughness: 0.55, metalness: 0.35, alphaMap: tex, alphaTest: 0.5 }));
   const face = ownStd(k, { color: 0x5c0f0a, emissive: 0xff2a18, emissiveIntensity: 2.2, roughness: 0.32, alphaMap: tex, alphaTest: 0.5 });
   const odd = ownStd(k, { color: 0x5c0f0a, emissive: 0xff2a18, emissiveIntensity: 2.2, roughness: 0.32, alphaMap: tex, alphaTest: 0.5 });
@@ -275,13 +279,13 @@ function elevatorCall(k: PropKit, text: string): void {
   const W = k.num('w', 0.13);
   const H = W * 2;
   k.rbox(W + 0.006, H + 0.006, 0.004, k.std(0x9ea3a8, 0.32, 0.85), 0, 0, 0.002, 0.002);
-  k.sign(text, 'elevator_call', W, H, 0, 0, 0.0042);
+  signPlane(k, text, 'elevator_call', W, H, 0, 0, 0.0042);
   const hasUp = text.includes('▲') || !text.includes('▼');
   const hasDown = text.includes('▼') || !text.includes('▲');
   const r = W * 0.17 * 0.95;
   const lit = k.glowMat(0xffc878, 2.4);
   const dark = k.std(0x55585c, 0.35, 0.8);
-  const ring = (y: number): ((on: boolean) => void) => switcher(k.torus(r, 0.0016, dark, 0, y, 0.0052, { seg: 32, cast: false }), lit, dark);
+  const ring = (y: number): ((on: boolean) => void) => switcher(k.torus(r, 0.0016, dark, 0, y, 0.0052, { seg: 20, cast: false }), lit, dark);
   const up = hasUp ? ring(H / 2 - 0.33 * H) : null;
   const down = hasDown ? ring(H / 2 - 0.57 * H) : null;
   let mode = 'idle';
@@ -332,12 +336,14 @@ function exitSign(k: PropKit): void {
   const shell = k.std(0xd8d7d0, 0.55, 0.02);
   const z = double ? 0 : D / 2;
   k.rbox(W, H, D, shell, 0, 0, z, 0.01);
-  k.sign(text, 'exit', W - 0.04, H - 0.05, 0, -0.005, z + D / 2 + 0.0006, { emissive: 1.6 });
+  signPlane(k, text, 'exit', W - 0.04, H - 0.05, 0, -0.005, z + D / 2 + 0.0006, { emissive: 1.6 });
   if (double) {
-    k.sign(text, 'exit', W - 0.04, H - 0.05, 0, -0.005, -D / 2 - 0.0006, { emissive: 1.6, ry: Math.PI });
+    signPlane(k, text, 'exit', W - 0.04, H - 0.05, 0, -0.005, -D / 2 - 0.0006, { emissive: 1.6, ry: Math.PI });
     const up = toCeiling(k);
-    k.cyl(0.008, 0.008, up - H / 2, shell, 0, (H / 2 + up) / 2, 0, { seg: 8 });
-    k.cyl(0.05, 0.05, 0.012, shell, 0, up - 0.006, 0, { seg: 20 });
+    if (up > H / 2 + 0.02) {
+      k.cyl(0.008, 0.008, up - H / 2, shell, 0, (H / 2 + up) / 2, 0, { seg: 8 });
+      k.cyl(0.05, 0.05, 0.012, shell, 0, up - 0.006, 0, { seg: 20 });
+    }
   }
   const led = k.box(0.006, 0.006, 0.003, k.std(0x0c1a0c, 0.4), W / 2 - 0.025, H / 2 - 0.018, z + D / 2 + 0.0015, { cast: false });
   const setLed = switcher(led, k.glowMat(0x4cff6a, 1.6), k.std(0x0c1a0c, 0.4));
@@ -352,7 +358,7 @@ const badgeReader: PropBuilder = (k) => {
   for (const r of [0.008, 0.013, 0.018]) k.torus(r, 0.0007, grey, -0.006, -0.012, 0.0285, { arc: Math.PI / 2, rz: -Math.PI / 4, seg: 10, cast: false });
   const lbl = texMat(k, 'badge:label', () => sharedTex('badge:label', () => drawSmallLabel(['PRESENT', 'BADGE'], { w: 128, h: 48, bg: '#1a1b1d', fg: '#9ea2a6' })), { roughness: 0.6 });
   k.plane(0.04, 0.015, lbl, 0, -0.04, 0.0284);
-  const led = k.rbox(0.026, 0.005, 0.003, k.std(0x220a08, 0.4), 0, 0.04, 0.0285, 0.0015, { cast: false });
+  const led = k.box(0.026, 0.005, 0.003, k.std(0x220a08, 0.4), 0, 0.04, 0.0285, { cast: false });
   const idle = k.glowMat(0xff2414, 0.65);
   const red = k.glowMat(0xff2414, 2.8);
   const green = k.glowMat(0x3cff6a, 2.8);
@@ -438,14 +444,17 @@ function board(k: PropKit, kind: string): void {
   k.rbox(w * 0.55, 0.012, 0.065, alu, 0, ty, 0.036, 0.004);
   k.box(w * 0.55, 0.02, 0.004, alu, 0, ty + 0.012, 0.067);
   const caps = [0x1d3f8f, 0x161616, 0xb3261e, 0x2e7d4f];
+  const tray = w * 0.275;
   const n = 2 + Math.floor(k.rand() * 3);
   for (let i = 0; i < n; i++) {
-    const x = -w * 0.2 + i * 0.05 + k.rand() * 0.02;
-    k.cyl(0.0075, 0.0075, 0.13, k.std(0xe8e8e4, 0.4), x, ty + 0.014, 0.035 + (k.rand() - 0.5) * 0.02, { axis: 'z', seg: 8, cast: false });
-    k.cyl(0.0082, 0.0082, 0.03, k.std(caps[i % caps.length], 0.45), x, ty + 0.014, 0.035 + 0.075, { axis: 'z', seg: 8, cast: false });
+    const x = -tray + 0.08 + i * 0.165 + k.rand() * 0.015;
+    if (x + 0.1 > tray - 0.15) break;
+    const z = 0.035 + (k.rand() - 0.5) * 0.02;
+    k.cyl(0.0075, 0.0075, 0.13, k.std(0xe8e8e4, 0.4), x, ty + 0.014, z, { axis: 'x', seg: 8, cast: false });
+    k.cyl(0.0082, 0.0082, 0.03, k.std(caps[i % caps.length], 0.45), x + 0.075, ty + 0.014, z, { axis: 'x', seg: 8, cast: false });
   }
-  k.rbox(0.12, 0.022, 0.05, k.std(0x2c2e31, 0.6), w * 0.17, ty + 0.017, 0.036, 0.006);
-  k.box(0.118, 0.006, 0.048, k.std(0x5a5d61, 0.95), w * 0.17, ty + 0.006, 0.036);
+  k.rbox(0.12, 0.022, 0.05, k.std(0x2c2e31, 0.6), tray - 0.075, ty + 0.017, 0.036, 0.006);
+  k.box(0.118, 0.006, 0.048, k.std(0x5a5d61, 0.95), tray - 0.075, ty + 0.006, 0.036);
 }
 
 const whiteboard: PropBuilder = (k) => board(k, k.str('kind', 'notices'));

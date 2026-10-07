@@ -528,7 +528,7 @@ export const POINTS: Record<string, Vec3> = {
   corridor_w: v3(-18, 1.65, 0),
   corridor_e: v3(18, 1.65, 0),
   corridor_mid: v3(0, 1.65, 0),
-  hall_figure_e: v3(17.5, 0, 0.3),
+  hall_figure_e: v3(12.4, 0, 0.35), // outside the restroom, backlit by corridor_fl_13 with fl_12 dark in front
   hall_figure_w: v3(-17.5, 0, -0.3),
   station_counter: v3(0, 1.1, -1.95),
   station_inside: v3(0, 1.65, -3.6),

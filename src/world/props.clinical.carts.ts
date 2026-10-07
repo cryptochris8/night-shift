@@ -4,7 +4,7 @@
  */
 import type { PropType } from '../core/types';
 import type { PropBuilder, PropKit } from './props';
-import { type V3, bev, caster, mat, pick, rod, rr, vary } from './props.clinical.common';
+import { type V3, bev, caster, line, mat, pick, rod, rr, soft, vary } from './props.clinical.common';
 
 const rect = (x: number, y: number, z: number): V3[] => [[-x, y, -z], [x, y, -z], [x, y, z], [-x, y, z]];
 
@@ -21,12 +21,12 @@ function linenCart(k: PropKit): void {
   const L = 0.86;
   const H = 0.92;
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) caster(k, sx * (W / 2 - 0.04), sz * (L / 2 - 0.05), 0.135, 0.05, frameM, rub, rr(k, 0, Math.PI * 2));
-  k.tube(rect(W / 2, 0.15, L / 2), 0.011, frameM, { closed: true });
-  k.tube(rect(W / 2, H, L / 2), 0.012, frameM, { closed: true });
+  line(k, rect(W / 2, 0.15, L / 2), 0.011, frameM, { closed: true });
+  line(k, rect(W / 2, H, L / 2), 0.012, frameM, { closed: true });
   for (const [x, , z] of rect(W / 2, 0, L / 2)) k.cyl(0.011, 0.011, H - 0.15, frameM, x, (H + 0.15) / 2, z, { seg: 8 });
   // canvas liner bulging between the posts, folded over the top rim
-  k.rbox(W - 0.05, H - 0.2, L - 0.05, canvas, 0, (H + 0.16) / 2, 0, 0.06);
-  k.rbox(W - 0.02, H - 0.42, L - 0.02, canvas, 0, (H + 0.16) / 2 - 0.02, 0, 0.1);
+  soft(k, W - 0.05, H - 0.2, L - 0.05, canvas, 0, (H + 0.16) / 2, 0, 0.06);
+  soft(k, W - 0.02, H - 0.42, L - 0.02, canvas, 0, (H + 0.16) / 2 - 0.02, 0, 0.1);
   for (const sz of [-1, 1]) k.box(W + 0.012, 0.07, 0.014, canvas, 0, H - 0.025, sz * (L / 2 + 0.002), { cast: false });
   for (const sx of [-1, 1]) k.box(0.014, 0.07, L + 0.012, canvas, sx * (W / 2 + 0.002), H - 0.025, 0, { cast: false });
   // used linen heaped in the mouth, a sheet trailing over one side
@@ -69,7 +69,7 @@ function supplyCart(k: PropKit): void {
   bev(k, 0.42, 0.26, 0.34, box, rr(k, -0.05, 0.05), 0.4, -0.2, 0.004, { ry: rr(k, -0.06, 0.06) });
   bev(k, 0.36, 0.2, 0.3, box, rr(k, -0.06, 0.06), 0.37, 0.24, 0.004, { ry: rr(k, -0.08, 0.08) });
   bev(k, 0.5, 0.16, 0.36, bin, 0, 0.75, -0.2, 0.012);
-  for (let i = 0; i < 3; i++) bev(k, 0.12, 0.012, 0.2, mat.clearPlastic(k), -0.13 + i * 0.13, 0.84, -0.2, 0.004, { rx: rr(k, -0.3, 0.3), cast: false });
+  for (let i = 0; i < 3; i++) bev(k, 0.12, 0.012, 0.2, white, -0.13 + i * 0.13, 0.84, -0.2, 0.004, { rx: rr(k, -0.3, 0.3), cast: false });
   for (let i = 0; i < 3; i++) bev(k, 0.25, 0.095, 0.13, white, -0.15 + (i % 2) * 0.3, 0.72 + Math.floor(i / 2) * 0.1, 0.25, 0.004, { ry: rr(k, -0.1, 0.1) });
   for (let i = 0; i < 4; i++) bev(k, 0.12, 0.08, 0.24, i % 2 ? white : box, -0.2 + i * 0.13, 1.115, rr(k, -0.15, 0.15), 0.003, { ry: rr(k, -0.15, 0.15) });
   bev(k, 0.3, 0.18, 0.22, box, 0.1, 1.56, -0.2, 0.004, { ry: rr(k, -0.15, 0.15) });
@@ -90,13 +90,13 @@ const cleaningCart: PropBuilder = (k) => {
   const yellow = mat.vinyl(k, 0xb3902c, 0.55);
   const black = mat.black(k);
   const metal = mat.satin(k);
-  const rub = mat.rubber(k);
+  const rub = black;
   const white = mat.plastic(k, 0xd3cfc3, 0.7);
   const blue = mat.plastic(k, 0x3a6ea5, 0.35);
-  const green = mat.plastic(k, 0x5b8a4a, 0.35);
+  const green = white;
 
   // base deck, rear wheels, front casters
-  k.rbox(0.55, 0.08, 1.1, body, 0, 0.17, 0, 0.025);
+  soft(k, 0.55, 0.08, 1.1, body, 0, 0.17, 0, 0.025);
   for (const sx of [-1, 1]) {
     k.cyl(0.1, 0.1, 0.045, rub, sx * 0.3, 0.1, -0.4, { axis: 'x', seg: 14 });
     k.cyl(0.04, 0.04, 0.05, body, sx * 0.3, 0.1, -0.4, { axis: 'x', seg: 10, cast: false });
@@ -114,10 +114,10 @@ const cleaningCart: PropBuilder = (k) => {
   bev(k, 0.022, 0.05, bl, body, -0.265, 0.56, zc, 0.006);
   bev(k, 0.55, 0.06, 0.022, body, 0, 0.95, z1, 0.006);
   // push handle arching over the bag end
-  k.tube([[-0.25, 0.9, z0], [-0.25, 1.0, -0.45], [0.25, 1.0, -0.45], [0.25, 0.9, z0]], 0.014, metal);
+  line(k, [[-0.25, 0.9, z0], [-0.25, 1.0, -0.45], [0.25, 1.0, -0.45], [0.25, 0.9, z0]], 0.014, metal);
   // yellow vinyl bag on its frame, black liner in the mouth
-  k.tube([[-0.21, 0.8, z0 - 0.02], [-0.21, 0.8, -0.53], [0.21, 0.8, -0.53], [0.21, 0.8, z0 - 0.02]], 0.009, metal, { cast: false });
-  k.rbox(0.42, 0.6, 0.38, yellow, 0, 0.5, -0.33, 0.08);
+  line(k, [[-0.21, 0.8, z0 - 0.02], [-0.21, 0.8, -0.53], [0.21, 0.8, -0.53], [0.21, 0.8, z0 - 0.02]], 0.009, metal, { cast: false });
+  soft(k, 0.42, 0.6, 0.38, yellow, 0, 0.5, -0.33, 0.08);
   k.box(0.38, 0.01, 0.32, black, 0, 0.787, -0.33, { cast: false });
   for (const sx of [-1, 1]) k.box(0.006, 0.06, 0.36, black, sx * 0.215, 0.775, -0.33, { cast: false });
   // round grey bin on the front deck with a liner folded over its rim
@@ -136,7 +136,7 @@ const cleaningCart: PropBuilder = (k) => {
   bev(k, 0.16, 0.1, 0.12, white, 0.12, 0.985, 0.1, 0.006, { ry: rr(k, -0.2, 0.2) });
   // supplies on the open shelves
   for (let i = 0; i < 4; i++) k.cyl(0.055, 0.055, 0.1, white, -0.12 + (i % 2) * 0.12, 0.585 + Math.floor(i / 2) * 0.1, -0.02 + (i % 2) * 0.1, { seg: 12, cast: false });
-  bev(k, 0.24, 0.12, 0.2, mat.cardboard(k), 0.08, 0.27, 0.05, 0.004);
+  bev(k, 0.24, 0.12, 0.2, white, 0.08, 0.27, 0.05, 0.004);
   bev(k, 0.2, 0.09, 0.12, blue, 0.1, 0.58, 0.06, 0.006);
   // wet mop parked head-down in its clip on the closed side, handle leaning
   const mx = 0.36;
@@ -154,10 +154,10 @@ const cleaningCart: PropBuilder = (k) => {
 const mopBucket: PropBuilder = (k) => {
   const yellow = mat.plastic(k, vary(k, 0xb3902c, 0.05), 0.5);
   const grey = mat.plastic(k, 0x494d51, 0.6);
-  const metal = mat.satin(k);
+  const metal = grey;
   const water = k.std(0x29271f, 0.08, 0.1);
   const mop = mat.plastic(k, 0xb3ae9f, 0.95);
-  const rub = mat.rubber(k);
+  const rub = grey;
   // open tub: floor, four walls, rolled lip; murky water inside
   bev(k, 0.36, 0.03, 0.46, yellow, 0, 0.095, 0, 0.01);
   for (const sx of [-1, 1]) bev(k, 0.022, 0.3, 0.48, yellow, sx * 0.18, 0.23, 0, 0.008);
@@ -169,7 +169,7 @@ const mopBucket: PropBuilder = (k) => {
   // side-press wringer straddling the -z half, lever up
   bev(k, 0.32, 0.22, 0.2, grey, 0, 0.5, -0.12, 0.02);
   bev(k, 0.26, 0.04, 0.16, grey, 0, 0.63, -0.12, 0.01);
-  k.tube([[-0.165, 0.58, -0.04], [-0.165, 0.94, -0.26], [0.165, 0.94, -0.26], [0.165, 0.58, -0.04]], 0.012, grey);
+  line(k, [[-0.165, 0.58, -0.04], [-0.165, 0.94, -0.26], [0.165, 0.94, -0.26], [0.165, 0.58, -0.04]], 0.012, grey);
   k.cyl(0.018, 0.018, 0.22, rub, 0, 0.94, -0.26, { axis: 'x', seg: 10, cast: false });
   // mop soaking in the front half, strands over the rim, handle against the lever
   k.cyl(0.08, 0.11, 0.12, mop, 0.02, 0.32, 0.11, { seg: 10 });

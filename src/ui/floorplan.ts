@@ -18,6 +18,8 @@ export interface FloorPlanExtras {
   litRooms: Partial<Record<RoomId, number>>;
   /** optional warning levels from the switcher (merged with character danger) */
   warnings?: Partial<Record<CharacterId, number>>;
+  /** live lock state per door id (doors lock / unlock when the generator takes over) */
+  doorLocked?: Record<string, boolean>;
 }
 
 interface RoomEl { rect: SVGRectElement; label: SVGTextElement; def: RoomDef }
@@ -221,6 +223,12 @@ export class FloorPlan {
 
   update(state: Readonly<GameState>, extras: FloorPlanExtras): void {
     if (this.disposed) return;
+    if (extras.doorLocked) {
+      for (const [id, d] of this.doors) {
+        const locked = extras.doorLocked[id];
+        if (locked !== undefined && d.leaf) d.leaf.classList.toggle('ns-fp__leaf--locked', locked);
+      }
+    }
     const active = state.activeView;
     const who: CharacterId | null = active === 'cctv' ? null : active;
     const selChar: CharacterId | null = this.selection && this.selection !== 'cctv' ? this.selection : null;

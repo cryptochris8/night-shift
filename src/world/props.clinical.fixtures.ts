@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import type { PropType } from '../core/types';
 import type { PropBuilder, PropKit } from './props';
-import { arcPts, bar, bev, cablePts, clamp, ledMat, mat, pick, rod, rr, vary, watchPower } from './props.clinical.common';
+import { arcPts, bar, bev, cablePts, clamp, ledMat, line, mat, pick, rod, rr, soft, vary, wallBehind, watchPower } from './props.clinical.common';
 
 // ---------------------------------------------------------------------------
 // Sinks
@@ -22,12 +22,12 @@ const sink: PropBuilder = (k) => {
   const lav = kind === 'lavatory';
   const w = clamp(k.def.footprint?.w ?? 0.6, 0.45, 0.9);
   const d = clamp(k.def.footprint?.d ?? 0.5, 0.4, 0.6);
-  const zb = -d / 2;
+  const zb = -clamp(wallBehind(k) ?? d / 2, 0, d / 2 + 0.1);
   const bowlM = lav ? mat.porcelain(k) : mat.stainless(k);
-  const chrome = mat.chrome(k);
+  const chrome = lav ? mat.chrome(k) : bowlM;
   const white = mat.plastic(k, 0xdad8d0, 0.45);
-  const grey = mat.plastic(k, 0x7c8388, 0.5);
-  const dark = mat.plastic(k, 0x26282b, 0.6);
+  const dark = mat.dark(k);
+  const grey = dark;
   const rimY = 0.86;
   const bw = w - 0.04;
   const bd = d - 0.04;
@@ -56,13 +56,13 @@ const sink: PropBuilder = (k) => {
     k.cyl(0.022, 0.026, 0.04, chrome, 0, rimY + 0.02, zb + 0.065, { seg: 12, cast: false });
     k.cyl(0.013, 0.013, 0.24, chrome, 0, rimY + 0.16, zb + 0.065, { seg: 10 });
     const arc = arcPts([0, rimY + 0.28, zb + 0.155], [0, 0, 1], [0, 1, 0], 0.09, Math.PI, 0, 8);
-    k.tube([...arc, [0, rimY + 0.22, zb + 0.245]], 0.011, chrome, { cast: false });
+    line(k, [...arc, [0, rimY + 0.22, zb + 0.245]], 0.011, chrome, { cast: false });
     for (const s of [-1, 1]) bar(k, [s * 0.025, rimY + 0.04, zb + 0.065], [s * 0.15, rimY + 0.06, zb + 0.085], 0.024, 0.007, chrome, { cast: false });
   }
   // P-trap and supplies back to the wall
-  k.tube([[0, rimY - 0.21, bz + 0.03], [0, rimY - 0.38, bz + 0.03], [0, rimY - 0.42, bz - 0.04], [0, rimY - 0.36, zb + 0.08], [0, rimY - 0.36, zb]], 0.019, chrome, { cast: false });
+  line(k, [[0, rimY - 0.21, bz + 0.03], [0, rimY - 0.38, bz + 0.03], [0, rimY - 0.42, bz - 0.04], [0, rimY - 0.36, zb + 0.08], [0, rimY - 0.36, zb]], 0.019, chrome, { cast: false });
   for (const s of [-1, 1]) {
-    k.tube([[s * 0.1, rimY - 0.21, zb + 0.1], [s * 0.1, rimY - 0.42, zb + 0.08], [s * 0.1, rimY - 0.44, zb]], 0.005, chrome, { cast: false });
+    line(k, [[s * 0.1, rimY - 0.21, zb + 0.1], [s * 0.1, rimY - 0.42, zb + 0.08], [s * 0.1, rimY - 0.44, zb]], 0.005, chrome, { cast: false });
     k.cyl(0.012, 0.012, 0.04, chrome, s * 0.1, rimY - 0.44, zb + 0.02, { axis: 'z', seg: 8, cast: false });
   }
   // soap: wall dispenser beside the splash (deck pump on a lavatory, whose wall belongs to the mirror);
@@ -90,9 +90,9 @@ function mopSink(k: PropKit): void {
   const zb = -d / 2;
   const stone = k.std(vary(k, 0xb5b2a8, 0.04), 0.78, 0);
   const steel = mat.stainless(k);
-  const chrome = mat.chrome(k);
-  const dark = mat.plastic(k, 0x1e1f21, 0.7);
-  const hose = mat.plastic(k, pick(k, [0x2f5a35, 0x232527]), 0.6);
+  const chrome = steel;
+  const dark = mat.dark(k);
+  const hose = mat.plastic(k, pick(k, [0x2f5a35, 0x3b5f8a]), 0.6);
   const h = 0.25;
   bev(k, w, 0.04, d, stone, 0, 0.02, 0, 0.01);
   for (const s of [-1, 1]) bev(k, 0.06, h, d, stone, s * (w / 2 - 0.03), h / 2, 0, 0.01);
@@ -100,7 +100,6 @@ function mopSink(k: PropKit): void {
   bev(k, w - 0.12, h, 0.04, stone, 0, h / 2, zb + 0.02, 0.008);
   k.box(w - 0.04, 0.006, 0.07, steel, 0, h + 0.003, d / 2 - 0.03, { cast: false });
   for (const s of [-1, 1]) k.box(0.07, 0.006, d - 0.02, steel, s * (w / 2 - 0.03), h + 0.003, 0, { cast: false });
-  k.box(w - 0.14, 0.002, d - 0.14, k.std(0x3a3830, 0.12, 0.05), 0, 0.042, 0.01, { cast: false });
   k.cyl(0.04, 0.04, 0.004, dark, 0, 0.044, 0.01, { seg: 12, cast: false });
   // splash panel and service faucet with vacuum breaker, bucket hook and wall brace
   bev(k, w, 0.62, 0.008, steel, 0, h + 0.31, zb + 0.004, 0.003);
@@ -113,17 +112,17 @@ function mopSink(k: PropKit): void {
     k.box(0.012, 0.06, 0.012, chrome, s * 0.09, fy + 0.04, fz + 0.01, { cast: false });
   }
   k.cyl(0.022, 0.022, 0.16, chrome, 0, fy + 0.11, fz, { seg: 10, cast: false });
-  k.tube([[0, fy - 0.02, fz], [0, fy - 0.06, fz + 0.1], [0, fy - 0.16, fz + 0.12]], 0.014, chrome, { cast: false });
-  k.tube([[0, fy - 0.1, fz + 0.1], [0.02, fy - 0.12, fz + 0.13], [0.02, fy - 0.08, fz + 0.15]], 0.004, chrome, { cast: false });
+  line(k, [[0, fy - 0.02, fz], [0, fy - 0.06, fz + 0.1], [0, fy - 0.16, fz + 0.12]], 0.014, chrome, { cast: false });
+  line(k, [[0, fy - 0.1, fz + 0.1], [0.02, fy - 0.12, fz + 0.13], [0.02, fy - 0.08, fz + 0.15]], 0.004, chrome, { cast: false });
   rod(k, [0, fy - 0.12, fz + 0.11], [0, fy - 0.3, zb + 0.01], 0.006, chrome, { cast: false });
   // hose draped from the spout into the basin and coiled on its floor
-  k.tube([...cablePts([0, fy - 0.17, fz + 0.12], [0.12, 0.07, 0.05], 0.05, 6), [0.2, 0.06, 0.12], [0.12, 0.06, 0.18], [0.02, 0.06, 0.1]], 0.012, hose, { cast: false });
+  line(k, [...cablePts([0, fy - 0.17, fz + 0.12], [0.12, 0.07, 0.05], 0.05, 6), [0.2, 0.06, 0.12], [0.12, 0.06, 0.18], [0.02, 0.06, 0.1]], 0.012, hose, { cast: false });
   // broom hanging from a clip rail beside the basin
   const bx = w / 2 + 0.14;
-  bev(k, 0.3, 0.03, 0.03, mat.satin(k), bx, 1.42, zb + 0.015, 0.006, { cast: false });
-  rod(k, [bx, 1.42, zb + 0.04], [bx + 0.02, 0.42, zb + 0.06], 0.012, mat.plastic(k, 0x3b5f8a, 0.5));
+  bev(k, 0.3, 0.03, 0.03, steel, bx, 1.42, zb + 0.015, 0.006, { cast: false });
+  rod(k, [bx, 1.42, zb + 0.04], [bx + 0.02, 0.42, zb + 0.06], 0.012, hose);
   bev(k, 0.3, 0.06, 0.05, dark, bx + 0.02, 0.38, zb + 0.06, 0.008);
-  k.box(0.28, 0.12, 0.04, k.std(0x6a5a44, 0.95, 0), bx + 0.02, 0.29, zb + 0.06, { cast: false });
+  k.box(0.28, 0.12, 0.04, dark, bx + 0.02, 0.29, zb + 0.06, { cast: false });
 }
 
 // ---------------------------------------------------------------------------
@@ -134,27 +133,27 @@ const sharpsBin: PropBuilder = (k) => {
   const red = k.std(0x8f1e19, 0.35, 0);
   const lid = mat.plastic(k, 0xd8d4ca, 0.4);
   const bracket = mat.plastic(k, vary(k, 0x8e9396, 0.04), 0.5);
-  const dark = mat.plastic(k, 0x111214, 0.7);
-  const white = mat.paper(k);
+  const dark = mat.dark(k);
+  const white = lid;
   bev(k, 0.31, 0.38, 0.012, bracket, 0, -0.01, 0.006, 0.004);
   bev(k, 0.31, 0.025, 0.17, bracket, 0, -0.175, 0.087, 0.006);
   for (const s of [-1, 1]) bev(k, 0.012, 0.14, 0.16, bracket, s * 0.15, -0.11, 0.082, 0.004, { cast: false });
-  k.rbox(0.27, 0.28, 0.15, red, 0, -0.025, 0.087, 0.02);
+  soft(k, 0.27, 0.28, 0.15, red, 0, -0.025, 0.087, 0.02);
   bev(k, 0.276, 0.05, 0.156, lid, 0, 0.135, 0.087, 0.012);
   k.box(0.14, 0.014, 0.004, dark, 0, 0.13, 0.166, { cast: false });
   bev(k, 0.14, 0.03, 0.006, lid, 0, 0.15, 0.17, 0.003, { rx: -0.35, cast: false });
   k.box(0.27, 0.004, 0.002, white, 0, 0.065, 0.163, { cast: false });
   k.box(0.1, 0.07, 0.002, white, 0, -0.05, 0.163, { cast: false });
-  k.cyl(0.006, 0.006, 0.004, mat.chrome(k), 0.12, 0.16, 0.013, { axis: 'z', seg: 8, cast: false });
+  k.cyl(0.006, 0.006, 0.004, dark, 0.12, 0.16, 0.013, { axis: 'z', seg: 8, cast: false });
 };
 
 const handSanitizer: PropBuilder = (k) => {
   const shell = mat.plastic(k, vary(k, 0xd9d8d2, 0.03), 0.4);
   const grey = mat.plastic(k, 0x7f868b, 0.5);
-  const dark = mat.plastic(k, 0x26292c, 0.6);
+  const dark = grey;
   const gel = k.phys('clin:gel', { color: 0x9fc6d6, roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6, depthWrite: false });
   bev(k, 0.125, 0.27, 0.01, grey, 0, 0.02, 0.005, 0.004);
-  k.rbox(0.12, 0.25, 0.1, shell, 0, 0.02, 0.055, 0.025);
+  soft(k, 0.12, 0.25, 0.1, shell, 0, 0.02, 0.055, 0.025);
   bev(k, 0.1, 0.07, 0.025, grey, 0, -0.07, 0.11, 0.01);
   k.box(0.05, 0.06, 0.002, gel, 0, 0.05, 0.1055, { cast: false });
   k.box(0.05, 0.03, 0.0025, dark, 0, 0.065, 0.1055, { cast: false });
@@ -162,7 +161,6 @@ const handSanitizer: PropBuilder = (k) => {
   // drip tray below, with a little dried residue in it and a run down the wall
   bev(k, 0.1, 0.02, 0.07, grey, 0, -0.25, 0.035, 0.006);
   k.box(0.07, 0.002, 0.045, gel, 0, -0.239, 0.04, { cast: false });
-  k.box(0.012, 0.07, 0.001, k.std(0x8a877c, 0.4, 0, { transparent: true, opacity: 0.35, depthWrite: false }), 0.01 + rr(k, -0.02, 0.02), -0.175, 0.0006, { cast: false });
 };
 
 const mirror: PropBuilder = (k) => {
@@ -195,13 +193,13 @@ const mirror: PropBuilder = (k) => {
 
 const waterFountain: PropBuilder = (k) => {
   const d = k.def.footprint?.d ?? 0.45;
-  const zb = -d / 2;
+  const zb = -clamp(wallBehind(k) ?? d / 2, 0, d / 2 + 0.1);
   const steel = mat.stainless(k);
   const inner = k.std(0x8d9193, 0.25, 0.85);
-  const chrome = mat.chrome(k);
-  const dark = mat.plastic(k, 0x1f2124, 0.55);
+  const chrome = steel;
+  const dark = mat.dark(k);
   const bowl = (x: number, top: number): void => {
-    k.rbox(0.38, 0.17, 0.44, steel, x, top - 0.085, zb + 0.22, 0.04);
+    soft(k, 0.38, 0.17, 0.44, steel, x, top - 0.085, zb + 0.22, 0.04);
     k.box(0.28, 0.004, 0.28, inner, x, top + 0.001, zb + 0.24, { cast: false });
     k.cyl(0.018, 0.018, 0.003, dark, x, top + 0.004, zb + 0.24, { seg: 10, cast: false });
     k.cyl(0.011, 0.014, 0.035, chrome, x - 0.09, top + 0.018, zb + 0.16, { seg: 8, cast: false });
@@ -218,12 +216,11 @@ const waterFountain: PropBuilder = (k) => {
   k.cyl(0.012, 0.012, 0.03, chrome, 0.2, 1.51, zb + 0.09, { seg: 8, cast: false });
   k.box(0.02, 0.012, 0.004, dark, 0.2, 1.555, zb + 0.112, { cast: false });
   const status = ledMat(k, 0x45d07a, 0.8);
-  const count = ledMat(k, 0x9fe8b0, 0.5);
+  const count = status;
   k.box(0.09, 0.012, 0.003, status, 0.2, 1.665, zb + 0.112, { cast: false });
   k.box(0.07, 0.022, 0.003, count, 0.2, 1.635, zb + 0.112, { cast: false });
   watchPower(k, (on) => {
     status.emissiveIntensity = on ? 0.8 : 0;
-    count.emissiveIntensity = on ? 0.5 : 0;
   });
 };
 
@@ -236,9 +233,9 @@ const toiletStall: PropBuilder = (k) => {
   const d = k.num('d', k.def.footprint?.d ?? 1.4);
   const panel = mat.painted(k, vary(k, pick(k, [0x8e8a80, 0x7d8580, 0x9a948a]), 0.04), 0.45);
   const hw = mat.stainless(k);
-  const alu = mat.satin(k);
+  const alu = hw;
   const china = mat.porcelain(k);
-  const chrome = mat.chrome(k);
+  const chrome = hw;
   const y0 = 0.3;
   const y1 = 1.75;
   const zf = d / 2 - 0.0125;
@@ -275,19 +272,19 @@ const toiletStall: PropBuilder = (k) => {
   bowl.scale.z = 1.22;
   const rim = k.torus(0.16, 0.024, china, 0, 0.385, tz, { rx: Math.PI / 2, seg: 24 });
   rim.scale.y = 1.22;
-  const seat = k.torus(0.16, 0.02, mat.plastic(k, 0xdcdad2, 0.35), 0, 0.413, tz + 0.01, { rx: Math.PI / 2, seg: 24, cast: false });
+  const seat = k.torus(0.16, 0.02, china, 0, 0.413, tz + 0.01, { rx: Math.PI / 2, seg: 24, cast: false });
   seat.scale.y = 1.22;
-  k.box(0.12, 0.02, 0.05, mat.plastic(k, 0xdcdad2, 0.35), 0, 0.41, tz - 0.21, { cast: false });
+  k.box(0.12, 0.02, 0.05, china, 0, 0.41, tz - 0.21, { cast: false });
   const water = k.cyl(0.11, 0.11, 0.003, k.std(0x23282a, 0.06, 0.1), 0, 0.3, tz + 0.02, { seg: 16, cast: false });
   water.scale.z = 1.18;
-  k.tube([[0, 0.86, -d / 2], [0, 0.86, -d / 2 + 0.09]], 0.014, chrome, { cast: false });
+  line(k, [[0, 0.86, -d / 2], [0, 0.86, -d / 2 + 0.09]], 0.014, chrome, { cast: false });
   k.cyl(0.03, 0.03, 0.12, chrome, 0, 0.86, -d / 2 + 0.1, { axis: 'x', seg: 10 });
   bar(k, [0.05, 0.86, -d / 2 + 0.1], [0.14, 0.84, -d / 2 + 0.13], 0.012, 0.012, chrome, { cast: false });
-  k.tube([[0, 0.82, -d / 2 + 0.1], [0, 0.44, -d / 2 + 0.11], [0, 0.4, -d / 2 + 0.15]], 0.016, chrome, { cast: false });
+  line(k, [[0, 0.82, -d / 2 + 0.1], [0, 0.44, -d / 2 + 0.11], [0, 0.4, -d / 2 + 0.15]], 0.016, chrome, { cast: false });
   // jumbo roll dispenser on the left partition
   const px = -w / 2 + 0.025 + 0.06;
   k.cyl(0.14, 0.14, 0.12, hw, px, 0.62, tz + 0.25, { axis: 'x', seg: 18 });
-  k.box(0.04, 0.12, 0.08, mat.paper(k), px, 0.47, tz + 0.25, { cast: false });
+  k.box(0.04, 0.12, 0.08, china, px, 0.47, tz + 0.25, { cast: false });
 };
 
 export const FIXTURE_BUILDERS: Partial<Record<PropType, PropBuilder>> = {

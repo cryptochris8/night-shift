@@ -256,6 +256,12 @@ class Game implements IGameController {
     // Reset the world + characters to their shift-start state
     s.world.build();
     s.lighting.setPowerState('normal', { immediate: true });
+    // Night lighting: like real wards after 22:00 the corridor runs every other troffer. It leaves pools of
+    // dark between the lights, and the panel behind the 23:45 figure stays lit so it reads as a silhouette.
+    for (const l of LAYOUT.lights) {
+      const m = /^corridor_fl_(\d+)$/.exec(l.id);
+      if (m && Number(m[1]) % 2 === 0) s.lighting.setFixture(l.id, 'off');
+    }
     s.characters.release();
     for (const id of ['john', 'susie', 'paul'] as const) {
       const sp = LAYOUT.spawn[id];

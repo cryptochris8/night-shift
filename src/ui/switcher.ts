@@ -354,7 +354,12 @@ export class Switcher {
     for (const id of CHARACTER_IDS) this.refreshCard(id, st);
     this.refreshCCTVCard(st);
     this.applySelection();
-    this.plan.update(st, { camerasOnline: this.camsOnline, litRooms: this.lit, warnings: this.warnLevel });
+    const doorLocked: Record<string, boolean> = {};
+    for (const d of this.s.layout.doors) {
+      const h = this.s.world.getDoor(d.id);
+      if (h) doorLocked[d.id] = h.locked;
+    }
+    this.plan.update(st, { camerasOnline: this.camsOnline, litRooms: this.lit, warnings: this.warnLevel, doorLocked });
   }
 
   private refreshCard(id: CharacterId, st: Readonly<import('../core/types').GameState>): void {

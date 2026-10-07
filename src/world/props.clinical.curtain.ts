@@ -72,14 +72,13 @@ const curtain: PropBuilder = (k) => {
 
   // aluminium track flush with the ceiling, end stops, carrier hooks down to the header
   const alu = mat.satin(k);
-  const dark = mat.plastic(k, 0x3a3d40, 0.6);
   const trackY = ceil - 0.014;
   bev(k, width + 0.12, 0.024, 0.032, alu, 0, trackY, 0, 0.004);
-  for (const s of [-1, 1]) k.box(0.02, 0.03, 0.04, dark, s * (width / 2 + 0.06), trackY - 0.004, 0, { cast: false });
+  for (const s of [-1, 1]) k.box(0.02, 0.03, 0.04, alu, s * (width / 2 + 0.06), trackY - 0.004, 0, { cast: false });
   const hooks = Math.max(2, Math.round(folds / 2));
   for (let i = 0; i <= hooks; i++) {
     const x = x0 + (i / hooks) * span;
-    k.box(0.006, trackY - 0.012 - topY, 0.006, dark, x, (trackY - 0.012 + topY) / 2, 0, { cast: false });
+    k.box(0.006, trackY - 0.012 - topY, 0.006, alu, x, (trackY - 0.012 + topY) / 2, 0, { cast: false });
   }
 
   // draught sway: the hem moves most, the header barely at all

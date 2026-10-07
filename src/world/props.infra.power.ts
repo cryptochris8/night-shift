@@ -8,7 +8,7 @@ import { type PropType, ZONES } from '../core/types';
 import type { MeshOpts, PropBuilder, PropKit } from './props';
 import { drawGauge, drawLcd, gaugeAngle } from './props.infra.tex';
 import { drawArcFlash, drawDirectory, drawNfpa, drawPlate, drawSmallLabel, drawStain } from './props.infra.tex2';
-import { brownout, decalMat, generatorRunning, gentle, live, onMains, pipe, powerOf, propSeed, sharedTex, switcher, texMat, toCeiling } from './props.infra.util';
+import { signPlane, brownout, decalMat, generatorRunning, gentle, live, onMains, pipe, powerOf, propSeed, sharedTex, switcher, texMat, toCeiling } from './props.infra.util';
 
 const dimHex = (c: number, f: number): number => {
   const r = Math.round(((c >> 16) & 255) * f);
@@ -49,7 +49,7 @@ export function meter(k: PropKit, key: string, label: string, max: number, x: nu
 function tHandle(k: PropKit, x: number, y: number, z: number, o: MeshOpts = {}): void {
   const chrome = k.std(0xb9bdc1, 0.3, 0.9);
   k.cyl(0.016, 0.016, 0.02, chrome, x, y, z + 0.01, { axis: 'z', seg: 12, ...o });
-  k.rbox(0.018, 0.09, 0.016, chrome, x, y - 0.03, z + 0.024, 0.006, o);
+  k.box(0.018, 0.09, 0.016, chrome, x, y - 0.03, z + 0.024, o);
 }
 
 function mainPanel(k: PropKit): void {
@@ -70,7 +70,7 @@ function mainPanel(k: PropKit): void {
   }
   const lamps = [0, 1, 2].map((i) => pilot(k, 0xff4030, 0.12 + i * 0.08, 0.58, z));
   ['A', 'B', 'C'].forEach((ph, i) => plate(k, `ph${ph}`, [`PH ${ph}`], 0.05, 0.02, 0.12 + i * 0.08, 0.53, z + 0.0005));
-  k.sign('DANGER — 480 VOLTS', 'warning', 0.24, 0.096, 0.3, 0.46, z + 0.0005);
+  signPlane(k, 'DANGER — 480 VOLTS', 'warning', 0.24, 0.096, 0.3, 0.46, z + 0.0005);
   // main breaker operator, handle up (ON)
   k.rbox(0.2, 0.3, 0.05, black, -0.14, 0.16, z + 0.025, 0.008);
   k.rbox(0.05, 0.12, 0.045, k.std(0x2a2b2d, 0.45, 0.1), -0.14, 0.21, z + 0.07, 0.008);
@@ -143,9 +143,9 @@ function zonesPanel(k: PropKit): void {
     k.box(0.09, rows * pitch + 0.012, 0.004, slot, cx, top - ((rows - 1) * pitch) / 2, zf + 0.002);
     for (let r = 0; r < rows; r++) {
       const y = top - r * pitch;
-      k.rbox(0.08, 0.042, 0.02, black, cx, y, zf + 0.01, 0.003);
+      k.box(0.08, 0.042, 0.02, black, cx, y, zf + 0.01);
       const zone = side === -1 && r < ZONES.length;
-      const hm = k.rbox(0.016, 0.016, 0.014, handleMat, cx - side * 0.012, y, zf + 0.026, 0.003, { cast: false });
+      const hm = k.box(0.016, 0.016, 0.014, handleMat, cx - side * 0.012, y, zf + 0.026, { cast: false });
       if (zone) {
         handles.push(live(hm));
         leds.push(switcher(k.cyl(0.0045, 0.0045, 0.004, k.std(0x0d200f, 0.4), 0, y, zf + 0.002, { axis: 'z', seg: 10, cast: false }), k.glowMat(0x46ff70, 2.2), k.std(0x0d200f, 0.4)));
@@ -156,8 +156,8 @@ function zonesPanel(k: PropKit): void {
   k.plane(0.16, 0.24, dir, 0, -0.37, zf + 0.001);
   const sleeve = k.phys('infra:sleeve', { color: 0xffffff, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.12, depthWrite: false });
   k.plane(0.17, 0.25, sleeve, 0, -0.37, zf + 0.003, { keep: true });
-  // the door hangs open about 35 degrees on its left hinge
-  const ang = -0.6;
+  // the door has been left swung back on its left hinge, so the breaker rows face the room
+  const ang = -1.75;
   const c = Math.cos(ang);
   const s = Math.sin(ang);
   const P = (lx: number, ly: number, lz: number): [number, number, number] => [-W / 2 + lx * c + lz * s, ly, D - lx * s + lz * c];
@@ -198,7 +198,7 @@ function generatorPanel(k: PropKit): void {
   plate(k, 'la', ['ALARM'], 0.1, 0.024, 0.16, 0.17, z + 0.0005);
   const arc = texMat(k, 'arcflash', () => sharedTex('arcflash', drawArcFlash), { roughness: 0.55 });
   k.plane(0.18, 0.124, arc, -0.1, -0.05, z + 0.0005);
-  k.sign('DANGER — 480 VOLTS', 'warning', 0.2, 0.08, 0.12, -0.05, z + 0.0005);
+  signPlane(k, 'DANGER — 480 VOLTS', 'warning', 0.2, 0.08, 0.12, -0.05, z + 0.0005);
   tHandle(k, W / 2 - 0.06, -0.1, z);
   const steel = k.std(0x8d9196, 0.35, 0.8);
   k.rbox(0.05, 0.045, 0.02, k.std(0xb08a2e, 0.35, 0.8), W / 2 - 0.06, -0.24, z + 0.03, 0.006);
@@ -335,7 +335,7 @@ const fuelTank: PropBuilder = (k) => {
   const sx = -Math.sqrt(R * R - (0.75 * R) ** 2) + 0.01;
   for (const gy of [cy - R * 0.75, cy + R * 0.75]) {
     pipe(k, 0.01, sx - gx, brass, 'x', (gx + sx) / 2, gy, L * 0.3, { seg: 8 });
-    k.rbox(0.03, 0.03, 0.03, brass, gx, gy, L * 0.3, 0.006);
+    k.box(0.03, 0.03, 0.03, brass, gx, gy, L * 0.3);
   }
   const glassH = R * 1.5 - 0.03;
   const glass = k.phys('infra:sightglass', { color: 0xe8f0ee, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.25, depthWrite: false });

@@ -57,7 +57,7 @@ const KIND: Record<FixtureKind, KindSpec> = {
   emergency: { color: 0xfff0d6, cd: 15, range: 7, strike: 'snap', glowTau: 0.03 },
   sodium: { color: 0xffa040, cd: 12, range: 15, strike: 'warm', glowTau: 0.08 },
   lamp: { color: 0xffd9a0, cd: 5, range: 4, strike: 'snap', glowTau: 0.04 },
-  desk: { color: 0xffe9c4, cd: 7, range: 3.2, strike: 'quick', glowTau: 0.04 },
+  desk: { color: 0xffe9c4, cd: 2.6, range: 3.2, strike: 'quick', glowTau: 0.04 },
   monitor: { color: 0x8fd0ff, cd: 5, range: 3, strike: 'quick', glowTau: 0.03 },
   vending: { color: 0x9fd3ff, cd: 7, range: 3.5, strike: 'quick', glowTau: 0.03 },
 };

@@ -10,7 +10,7 @@ import type { PropBuilder, PropKit } from './props';
 import { drawLcd, gaugeAngle } from './props.infra.tex';
 import { drawRadiatorCore, drawStain, drawStripes } from './props.infra.tex2';
 import { meter, pilot, plate } from './props.infra.power';
-import { bakeInto, decalMat, generatorRunning, live, pipe, planeRep, powerOf, sharedTex, staging, switcher, texMat, toCeiling } from './props.infra.util';
+import { signPlane, bakeInto, decalMat, generatorRunning, live, pipe, planeRep, powerOf, sharedTex, staging, switcher, texMat, toCeiling } from './props.infra.util';
 
 /** Rail along x or z made of alternating yellow / black bands. */
 function bandedRail(k: PropKit, axis: 'x' | 'z', a0: number, a1: number, y: number, c: number, r: number): void {
@@ -174,7 +174,7 @@ const generator: PropBuilder = (k) => {
     bandedRail(k, 'z', -0.75, 0.45, y, -1.75, 0.022);
     bandedRail(k, 'z', -0.75, 0.45, y, 1.75, 0.022);
   }
-  k.sign('WARNING — EQUIPMENT STARTS AUTOMATICALLY', 'warning', 0.5, 0.2, 0.8, 0.8, -0.776, { ry: Math.PI });
+  signPlane(k, 'WARNING — EQUIPMENT STARTS AUTOMATICALLY', 'warning', 0.5, 0.2, 0.8, 0.8, -0.776, { ry: Math.PI });
   const tape = texMat(k, 'floortape', () => sharedTex('floortape', drawStripes, { repeat: true }), { roughness: 0.6 });
   const X = 1.92;
   const Z = 0.92;

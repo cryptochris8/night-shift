@@ -89,9 +89,9 @@ interface PipeSpec {
 
 const PIPES: PipeSpec[] = [
   { label: 'CHW SUPPLY', kind: 'ins', r: 0.08, bg: '#2f7a3e', fg: '#f4f4f0' },
-  { label: 'DOM CW', kind: 'copper', r: 0.021, bg: '#2f7a3e', fg: '#f4f4f0' },
+  { label: 'DOM HW', kind: 'copper', r: 0.021, bg: '#2f7a3e', fg: '#f4f4f0' },
   { label: 'FIRE PROTECTION', kind: 'red', r: 0.05, bg: '#a3221a', fg: '#f4f4f0' },
-  { label: 'DOM HW', kind: 'ins', r: 0.045, bg: '#2f7a3e', fg: '#f4f4f0' },
+  { label: 'DOM CW', kind: 'ins', r: 0.045, bg: '#2f7a3e', fg: '#f4f4f0' },
   { label: 'CHW RETURN', kind: 'ins', r: 0.08, bg: '#2f7a3e', fg: '#f4f4f0' },
   { label: 'SAN DRAIN', kind: 'iron', r: 0.055, bg: '#2f7a3e', fg: '#f4f4f0' },
 ];
@@ -160,7 +160,11 @@ const pipeRun: PropBuilder = (k) => {
   bakeInto(k, st, k.group);
 };
 
-/** EMT conduit: straps, couplings, junction boxes; params.vertical adds drops into equipment and risers. */
+/**
+ * EMT conduit run along local x (params.length, params.count) with straps, couplings and junction
+ * boxes. params.vertical turns the run to local y; params.drops (true or local x positions) adds
+ * short drops down into equipment below plus risers into the ceiling at both ends.
+ */
 const conduit: PropBuilder = (k) => {
   const L = k.num('length', 3);
   const n = Math.max(1, Math.min(4, Math.round(k.num('count', 2))));
@@ -190,16 +194,22 @@ const conduit: PropBuilder = (k) => {
     k.box(0.112, 0.112 + (n - 1) * 0.055, 0.003, box, bx, -((n - 1) * 0.055) / 2, 0.0565, { parent: st });
     if (b % 2 === 0) k.plane(0.04, 0.02, red, bx, -((n - 1) * 0.055) / 2, 0.0582, { parent: st });
   }
-  if (vertical) {
-    const drops = [[-0.28, 0.2], [-0.22, 0.2], [0.1, 0.42], [0.16, 0.42]];
-    for (const [fx, len] of drops) {
-      const x = fx * L;
+  const dropsParam = k.p.drops;
+  const drops: number[] = Array.isArray(dropsParam)
+    ? dropsParam.filter((v): v is number => typeof v === 'number')
+    : dropsParam === true
+      ? [-0.28 * L, -0.22 * L, 0.1 * L, 0.16 * L]
+      : [];
+  if (!vertical && drops.length) {
+    const len = k.num('dropLength', 0.3);
+    for (const x of drops) {
       pipe(k, 0.0145, len, emt, 'y', x, -len / 2, 0.0185, { seg: 10, parent: st });
       k.cyl(0.022, 0.022, 0.03, emt, x, -len + 0.015, 0.0185, { seg: 10, parent: st });
     }
     const up = toCeiling(k, 0.3);
     for (const sx of [-1, 1]) pipe(k, 0.0145, up, emt, 'y', sx * (L / 2 - 0.02), up / 2, 0.0185, { seg: 10, parent: st });
   }
+  if (vertical) st.rotation.z = Math.PI / 2;
   bakeInto(k, st, k.group);
 };
 

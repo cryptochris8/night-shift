@@ -51,6 +51,9 @@
   inset: 0;
   z-index: 3;
   display: grid;
+  /* one track pinned to the overlay, so the panel height resolves against the screen
+     and its body scrolls instead of the panel growing past the viewport */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   padding: var(--nsp-safe-t) var(--nsp-safe-r) var(--nsp-safe-b) var(--nsp-safe-l);
   background:

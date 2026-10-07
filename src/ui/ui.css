@@ -19,7 +19,8 @@
 }
 #ui > .ns-root--top { z-index: 5; }
 .ns-root [hidden] { display: none !important; }
-.ns-root button { font: inherit; color: inherit; }
+/* zero-specificity reset so component button classes (.ns-btn …) win */
+.ns-root :where(button) { font: inherit; color: inherit; }
 
 /* ---------------------------------------------------------------------------
    Letterbox (class `cinematic` on #ui, set by the cinematic system)

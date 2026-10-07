@@ -41,6 +41,8 @@ const POSES = [
   ['generator', 'paul', 11.2, 9.0, { x: 14, y: 1.0, z: 11.6 }],
   ['utility', 'paul', -6, 8.9, { x: -6.5, y: 1.0, z: 10.8 }],
   ['med_room', 'susie', 0.3, 2.1, { x: -0.5, y: 1.0, z: 4.8 }],
+  ['figure_john', 'john', -7.7, 0.7, { x: 17.5, y: 1.3, z: 0.3 }],
+  ['figure_susie', 'susie', -7.0, 0.2, { x: 17.5, y: 1.3, z: 0.3 }],
 ];
 
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
@@ -77,14 +79,14 @@ await page.waitForFunction(() => window.__NS.state().screen === 'intro', null, {
 await sleep(1500);
 await page.evaluate(() => window.__NS.skipIntro());
 await page.waitForFunction(() => window.__NS.state().screen === 'playing', null, { timeout: 30000 });
-await page.evaluate((t) => window.__NS.setTime(t), TIME);
-if (POWER !== 'normal') {
-  await page.evaluate((p) => {
-    const s = window.__NS.services;
-    s.lighting.setPowerState(p, { immediate: true });
-    s.store.setPower(p);
-    s.postfx.setBlackout(0);
-  }, POWER);
+if (POWER === 'generator') {
+  // let the director run the real outage → generator sequence, then wait for the lights to settle
+  await page.evaluate(() => window.__NS.setTime(79.95));
+  await page.waitForFunction(() => window.__NS.state().power === 'generator' && window.__NS.services.lighting.seq === null, null, { timeout: 180000 });
+  await sleep(3000);
+  if (TIME > 83) await page.evaluate((t) => window.__NS.setTime(t), TIME);
+} else {
+  await page.evaluate((t) => window.__NS.setTime(t), TIME);
 }
 const EVAL = arg('--eval', '');
 if (EVAL) {
@@ -111,7 +113,7 @@ for (const [name, view, x, z, look] of POSES) {
   );
   const AFTER = arg('--after', '');
   if (AFTER) await page.evaluate(`(() => { const s = window.__NS.services; return (${AFTER}); })()`);
-  await sleep(1400);
+  await sleep(Number(arg('--wait', '1400')));
   const t0 = Date.now();
   await page.screenshot({ path: resolve(OUT, `${name}.png`) });
   const fps = await page.evaluate(() => new Promise((res) => {

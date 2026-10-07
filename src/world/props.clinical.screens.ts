@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import type { PropType } from '../core/types';
 import type { ScreenOpts } from '../render/textures';
 import type { MeshOpts, PropBuilder, PropKit, ScreenHandle } from './props';
-import { Glow, type V3, bar, bev, cablePts, caster, clamp, ledMat, mat, rod, rr, starBase, tiltX, vary } from './props.clinical.common';
+import { Glow, type V3, bar, bev, cablePts, caster, clamp, ledMat, line, mat, rod, rr, soft, starBase, tiltX, vary } from './props.clinical.common';
 
 // ---------------------------------------------------------------------------
 // Screen rig
@@ -142,9 +142,9 @@ const monitor: PropBuilder = (k) => {
   const key = k.str('patient', k.def.room);
   const shell = mat.plastic(k, vary(k, 0xd2d3cd, 0.04), 0.45);
   const dark = mat.plastic(k, 0x2a2d30, 0.5);
-  const trim = mat.plastic(k, 0x7b8287, 0.55);
   const metal = mat.satin(k);
-  const rub = mat.rubber(k);
+  const trim = metal;
+  const rub = dark;
   const W = 0.36;
   const H = 0.3;
   const D = 0.1;
@@ -152,14 +152,14 @@ const monitor: PropBuilder = (k) => {
   const front = hz + D * 0.475;
 
   // housing: rounded front shell, deeper rear hump, dark bezel
-  k.rbox(W, H, D * 0.55, shell, 0, 0, hz + D * 0.2, 0.022);
-  k.rbox(W * 0.8, H * 0.76, D * 0.62, shell, 0, -0.006, hz - D * 0.16, 0.03);
+  soft(k, W, H, D * 0.55, shell, 0, 0, hz + D * 0.2, 0.022);
+  soft(k, W * 0.8, H * 0.76, D * 0.62, shell, 0, -0.006, hz - D * 0.16, 0.03);
   bev(k, 0.318, 0.244, 0.008, dark, 0, 0.012, front + 0.002, 0.003);
   // control strip under the screen
   k.cyl(0.015, 0.015, 0.012, dark, 0.135, -0.124, front + 0.002, { axis: 'z', seg: 12, cast: false });
   for (let i = 0; i < 4; i++) bev(k, 0.026, 0.01, 0.006, trim, -0.13 + i * 0.034, -0.126, front + 0.001, 0.002, { cast: false });
   // carry handle and alarm lamp on top
-  k.tube([[-0.11, H / 2 - 0.006, hz - 0.012], [-0.11, H / 2 + 0.032, hz - 0.012], [0.11, H / 2 + 0.032, hz - 0.012], [0.11, H / 2 - 0.006, hz - 0.012]], 0.009, trim, { cast: false });
+  line(k, [[-0.11, H / 2 - 0.006, hz - 0.012], [-0.11, H / 2 + 0.032, hz - 0.012], [0.11, H / 2 + 0.032, hz - 0.012], [0.11, H / 2 - 0.006, hz - 0.012]], 0.009, trim, { cast: false });
   const lamp = ledMat(k, 0xff2a1a, 0);
   bev(k, 0.15, 0.012, 0.026, lamp, 0, H / 2 + 0.002, hz + D * 0.3, 0.004, { cast: false });
   // parameter module rack with patient connectors on the right side
@@ -168,7 +168,7 @@ const monitor: PropBuilder = (k) => {
   // speaker grille slots on the rear hump
   for (let i = 0; i < 5; i++) k.box(0.08, 0.004, 0.004, dark, -0.06, -0.06 + i * 0.012, hz - D * 0.47, { cast: false });
 
-  const cableM = mat.plastic(k, 0x9aa0a3, 0.6);
+  const cableM = dark;
   if (arm) {
     // wall channel + two-link arm out to the tilt head behind the housing
     bev(k, 0.075, 0.44, 0.026, trim, 0, -0.05, 0.013, 0.005);
@@ -179,8 +179,8 @@ const monitor: PropBuilder = (k) => {
     bar(k, p1, p2, 0.05, 0.034, dark);
     for (const p of [p0, p1, p2]) k.cyl(0.029, 0.029, 0.05, trim, p[0], p[1], p[2], { seg: 12 });
     bev(k, 0.11, 0.11, 0.02, dark, 0, 0, hz - D * 0.47 - 0.012, 0.004);
-    k.tube(cablePts([W / 2 + 0.05, -0.02, hz + 0.02], [0.03, -0.24, 0.03], 0.42, 10), 0.005, cableM, { cast: false });
-    k.tube(cablePts([W / 2 + 0.05, 0.03, hz + 0.02], [0.2, -0.5, hz * 0.6], 0.25, 8), 0.004, cableM, { cast: false });
+    line(k, cablePts([W / 2 + 0.05, -0.02, hz + 0.02], [0.03, -0.24, 0.03], 0.42, 6), 0.005, cableM, { cast: false });
+    line(k, cablePts([W / 2 + 0.05, 0.03, hz + 0.02], [0.2, -0.5, hz * 0.6], 0.25, 6), 0.004, cableM, { cast: false });
   } else {
     // rolling stand: clamp behind the housing, pole to a five-caster base on the floor
     const floorY = -k.def.pos.y;
@@ -203,8 +203,8 @@ const monitor: PropBuilder = (k) => {
     k.torus(0.05, 0.007, cableM, 0.03, by - 0.045, bz, { rx: Math.PI / 2, seg: 18, cast: false });
     starBase(k, { z: poleZ, floor: floorY, radius: 0.29, hubR: 0.05, hubY: floorY + 0.115, tipY: floorY + 0.1, legW: 0.042, legH: 0.03, casterR: 0.035, legMat: dark, hubMat: dark, casterMetal: metal, wheelMat: rub });
     // patient leads looping down from the module to the basket
-    k.tube(cablePts([W / 2 + 0.05, -0.02, hz + 0.02], [0.08, by + 0.05, bz + 0.06], 0.35, 10), 0.005, cableM, { cast: false });
-    k.tube(cablePts([W / 2 + 0.05, 0.04, hz + 0.02], [-0.05, by + 0.05, bz], 0.55, 10), 0.004, cableM, { cast: false });
+    line(k, cablePts([W / 2 + 0.05, -0.02, hz + 0.02], [0.08, by + 0.05, bz + 0.06], 0.35, 6), 0.005, cableM, { cast: false });
+    line(k, cablePts([W / 2 + 0.05, 0.04, hz + 0.02], [-0.05, by + 0.05, bz], 0.55, 6), 0.004, cableM, { cast: false });
   }
 
   // --- content -------------------------------------------------------------
@@ -292,27 +292,27 @@ const monitor: PropBuilder = (k) => {
 const terminal: PropBuilder = (k) => {
   const bezelM = mat.plastic(k, vary(k, 0x24272a, 0.08), 0.5);
   const shell = mat.plastic(k, 0x303337, 0.55);
-  const keyM = mat.plastic(k, 0x3b3e42, 0.62);
-  const padM = mat.plastic(k, 0x1b1c1e, 0.9);
+  const keyM = shell;
+  const padM = bezelM;
   const baseZ = -0.1;
   // stand: foot, neck
-  k.rbox(0.23, 0.014, 0.19, shell, 0, 0.007, baseZ, 0.006);
+  bev(k, 0.23, 0.014, 0.19, shell, 0, 0.007, baseZ, 0.006);
   bev(k, 0.07, 0.2, 0.026, shell, 0, 0.11, baseZ - 0.03, 0.008);
   // panel tilted back a little on its hinge
   const tilt = -0.09;
   const pivot: V3 = [0, 0.22, baseZ - 0.02];
   const at = (p: V3): V3 => tiltX(p, pivot, tilt);
   const pc = at([0, 0.3, baseZ]);
-  k.rbox(0.42, 0.335, 0.026, bezelM, pc[0], pc[1], pc[2], 0.008, { rx: tilt });
+  bev(k, 0.42, 0.335, 0.026, bezelM, pc[0], pc[1], pc[2], 0.008, { rx: tilt });
   const rear = at([0, 0.29, baseZ - 0.028]);
-  k.rbox(0.28, 0.2, 0.034, shell, rear[0], rear[1], rear[2], 0.012, { rx: tilt });
+  bev(k, 0.28, 0.2, 0.034, shell, rear[0], rear[1], rear[2], 0.012, { rx: tilt });
   const sc = at([0, 0.306, baseZ + 0.0135]);
   // power LED in the bezel chin
   const led = ledMat(k, 0x7fb6ff, 0.6);
   const lp = at([0.185, 0.145, baseZ + 0.0135]);
   k.box(0.006, 0.004, 0.002, led, lp[0], lp[1], lp[2], { rx: tilt, cast: false });
   // keyboard: body + key rows (main block, navigation/numpad block)
-  bev(k, 0.44, 0.02, 0.15, shell, 0, 0.01, 0.13, 0.006);
+  bev(k, 0.44, 0.02, 0.15, bezelM, 0, 0.01, 0.13, 0.006);
   for (let r = 0; r < 5; r++) {
     const z = 0.078 + r * 0.025;
     k.box(r === 4 ? 0.13 : 0.29, 0.007, 0.019, keyM, r === 4 ? -0.07 : -0.065, 0.023, z, { cast: false });
@@ -328,7 +328,7 @@ const terminal: PropBuilder = (k) => {
   const mouse = k.sphere(0.03, shell, mx + rr(k, -0.02, 0.02), 0.014, 0.15 + rr(k, -0.02, 0.02), { seg: 10, cast: false });
   mouse.scale.set(0.62, 0.42, 1.05);
   mouse.rotation.y = rr(k, -0.3, 0.3);
-  k.tube([[mx, 0.008, 0.118], [mx - 0.02, 0.004, 0.05], [0.16, 0.004, -0.04], [0.06, 0.004, baseZ - 0.05]], 0.0022, padM, { cast: false });
+  line(k, [[mx, 0.008, 0.118], [mx - 0.02, 0.004, 0.05], [0.16, 0.004, -0.04], [0.06, 0.004, baseZ - 0.05]], 0.0022, padM, { cast: false });
   // a sticky note or two on the bezel
   const note = mat.plastic(k, 0xd6c56a, 0.9);
   if (k.rand() < 0.65) {
@@ -367,8 +367,9 @@ const terminal: PropBuilder = (k) => {
     look,
     near: 12,
     onMode: (m) => {
-      led.emissive.setHex(m === 'off' ? 0xffa040 : 0x7fb6ff);
-      led.emissiveIntensity = m === 'off' ? 0.35 : 0.6;
+      // 'off' is what the director sends when the circuit is dead; amber is the power-save lamp
+      led.emissive.setHex(m === 'standby' ? 0xffa040 : 0x7fb6ff);
+      led.emissiveIntensity = m === 'off' ? 0 : m === 'standby' ? 0.35 : 0.6;
     },
   });
 };
@@ -378,19 +379,19 @@ const terminal: PropBuilder = (k) => {
 // ---------------------------------------------------------------------------
 
 const securityMonitor: PropBuilder = (k) => {
-  const onCart = k.str('base', 'cart') !== 'desk';
+  const onCart = k.str('base', 'desk') === 'cart';
   const caseM = mat.painted(k, 0x232527, 0.55);
   const metal = mat.satin(k);
   const dark = mat.plastic(k, 0x18191b, 0.6);
   // industrial 17" 4:3 monitor in a steel case on a short pedestal
   bev(k, 0.22, 0.014, 0.17, caseM, 0, 0.007, -0.02, 0.004);
   bev(k, 0.05, 0.13, 0.04, caseM, 0, 0.075, -0.045, 0.006);
-  k.rbox(0.38, 0.31, 0.06, caseM, 0, 0.3, -0.01, 0.008);
+  bev(k, 0.38, 0.31, 0.06, caseM, 0, 0.3, -0.01, 0.008);
   bev(k, 0.3, 0.22, 0.05, caseM, 0, 0.295, -0.06, 0.012);
   for (let i = 0; i < 5; i++) bev(k, 0.018, 0.009, 0.005, dark, 0.06 + i * 0.024, 0.159, 0.022, 0.002, { cast: false });
   const pwr = ledMat(k, 0x5fd38a, 0.7);
   k.box(0.006, 0.004, 0.002, pwr, -0.165, 0.159, 0.021, { cast: false });
-  k.tube(cablePts([0.08, 0.22, -0.085], [0.12, -0.05, -0.12], 0.06, 6), 0.004, dark, { cast: false });
+  line(k, [[0.08, 0.22, -0.085], [0.11, 0.06, -0.11], [0.12, 0.004, -0.15], [0.14, 0.004, -0.24]], 0.004, dark, { cast: false });
 
   const rec = ledMat(k, 0xff3a2a, 0);
   let recording = false;
@@ -406,7 +407,7 @@ const securityMonitor: PropBuilder = (k) => {
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
         k.box(0.022, top - floorY - 0.11, 0.022, metal, sx * (cw / 2 - 0.015), (top + floorY + 0.11) / 2, sz * (cd / 2 - 0.015));
-        caster(k, sx * (cw / 2 - 0.03), sz * (cd / 2 - 0.03), floorY + 0.11, 0.04, metal, mat.rubber(k), rr(k, 0, 6.28), { floor: floorY });
+        caster(k, sx * (cw / 2 - 0.03), sz * (cd / 2 - 0.03), floorY + 0.11, 0.04, metal, dark, rr(k, 0, 6.28), { floor: floorY });
       }
     }
     // DVR on the middle shelf, UPS on the bottom
@@ -415,8 +416,8 @@ const securityMonitor: PropBuilder = (k) => {
     k.box(0.006, 0.004, 0.002, rec, -0.135, floorY + 0.51, 0.131, { cast: false });
     for (let i = 0; i < 6; i++) k.box(0.02, 0.012, 0.002, metal, 0.02 + i * 0.026, floorY + 0.505, 0.131, { cast: false });
     bev(k, 0.15, 0.22, 0.34, dark, -0.12, floorY + 0.28, -0.01, 0.006);
-    k.box(0.006, 0.004, 0.002, k.glowMat(0x5fd38a, 0.8), -0.12, floorY + 0.35, 0.161, { cast: false });
-    k.tube(cablePts([0.05, floorY + 0.53, -0.17], [0.0, -0.02, -0.19], 0.02, 6), 0.005, dark, { cast: false });
+    k.box(0.006, 0.004, 0.002, pwr, -0.12, floorY + 0.35, 0.161, { cast: false });
+    line(k, cablePts([0.05, floorY + 0.53, -0.17], [0.0, -0.02, -0.19], 0.02, 6), 0.005, dark, { cast: false });
     let t = k.rand() * 4;
     k.onUpdate((dt) => {
       if (!recording) return;
@@ -461,7 +462,7 @@ const securityMonitor: PropBuilder = (k) => {
 
 const tv: PropBuilder = (k) => {
   const bezelM = mat.plastic(k, 0x161719, 0.45);
-  const backM = mat.plastic(k, 0x222427, 0.6);
+  const backM = bezelM;
   const metal = mat.darkMetal(k);
   const W = 0.93;
   const H = 0.545;
@@ -478,14 +479,14 @@ const tv: PropBuilder = (k) => {
   }
   // panel, rear housing, screen
   const back = at([0, -0.02, 0.085]);
-  k.rbox(0.62, 0.36, 0.035, backM, back[0], back[1], back[2], 0.012, { rx: tilt });
+  bev(k, 0.62, 0.36, 0.035, backM, back[0], back[1], back[2], 0.012, { rx: tilt });
   const body = at([0, 0, 0.115]);
-  k.rbox(W, H, 0.026, bezelM, body[0], body[1], body[2], 0.006, { rx: tilt });
+  bev(k, W, H, 0.026, bezelM, body[0], body[1], body[2], 0.006, { rx: tilt });
   const led = ledMat(k, 0xff2a1a, 0);
   const lp = at([0.4, -H / 2 + 0.008, 0.129]);
   k.box(0.006, 0.004, 0.002, led, lp[0], lp[1], lp[2], { rx: tilt, cast: false });
   // power and coax lead dropping from the set into the recessed wall box behind it
-  k.tube(cablePts(at([0.12, -0.1, 0.07]), [0.1, -0.08, 0.01], 0.07, 6), 0.004, metal, { cast: false });
+  line(k, cablePts(at([0.12, -0.1, 0.07]), [0.1, -0.08, 0.01], 0.07, 6), 0.004, metal, { cast: false });
   const sc = at([0, 0.006, 0.1285]);
 
   const look = (mode: string): ScreenLook => {

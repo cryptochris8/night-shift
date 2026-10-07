@@ -5,7 +5,7 @@
 import type { PropType } from '../core/types';
 import type { PropBuilder, PropKit } from './props';
 import { type CaseMats, baseRun, caseMats } from './props.clinical.casework';
-import { bev, cablePts, caster, ledMat, mat, pick, rr, vary, watchPower } from './props.clinical.common';
+import { bev, cablePts, caster, clamp, ledMat, line, mat, pick, rr, soft, vary, watchPower } from './props.clinical.common';
 import { type ScreenLook, screenRig } from './props.clinical.screens';
 
 // ---------------------------------------------------------------------------
@@ -27,21 +27,21 @@ const cabinet: PropBuilder = (k) => {
   baseRun(k, M, { x0: -w / 2, x1: w / 2, zFace: d / 2 - 0.02, depth: d - 0.02, height: h - 0.03, bays: w > 0.7 ? ['drawer_door', 'drawer_door'] : ['drawer_door'] });
   bev(k, w + 0.01, 0.03, d + 0.01, M.top, 0, h - 0.015, 0.005, 0.004);
   // exam-room stock on top: glove boxes, tissues, folded gowns
-  const gloves = [0x6a5fa6, 0x4a7fb0, 0xd8d6cf];
+  const stock = mat.plastic(k, 0x4a6fa8, 0.6);
   const n = w > 0.7 ? 3 : 2;
   for (let i = 0; i < n; i++) {
-    bev(k, 0.125, 0.065, 0.25, mat.plastic(k, gloves[i % 3], 0.6), -w / 2 + 0.09 + i * 0.14, h + 0.0325, -d / 2 + 0.15, 0.004, { ry: rr(k, -0.05, 0.05) });
+    bev(k, 0.125, 0.065, 0.25, stock, -w / 2 + 0.09 + i * 0.14, h + 0.0325, -d / 2 + 0.15, 0.004, { ry: rr(k, -0.05, 0.05) });
   }
-  if (k.rand() < 0.7) bev(k, 0.24, 0.09, 0.12, mat.plastic(k, 0x9fb4c0, 0.6), w / 2 - 0.15, h + 0.045, 0.05, 0.008, { ry: rr(k, -0.4, 0.4) });
-  if (k.rand() < 0.6) bev(k, 0.3, 0.06, 0.22, mat.plastic(k, 0x8fb0c4, 0.85), w / 2 - 0.18, h + 0.03, -0.1, 0.01, { ry: rr(k, -0.2, 0.2) });
+  if (k.rand() < 0.7) bev(k, 0.24, 0.09, 0.12, M.top, w / 2 - 0.15, h + 0.045, 0.05, 0.008, { ry: rr(k, -0.4, 0.4) });
+  if (k.rand() < 0.6) bev(k, 0.3, 0.06, 0.22, stock, w / 2 - 0.18, h + 0.03, -0.1, 0.01, { ry: rr(k, -0.2, 0.2) });
 };
 
 /** Laser printer on a two-shelf rolling stand with paper stock underneath. */
 function printerStand(k: PropKit): void {
-  const steel = mat.painted(k, 0x3b3e41, 0.5);
   const lam = mat.plastic(k, 0x8a857a, 0.5);
   const shell = mat.plastic(k, vary(k, 0xc7c3b8, 0.03), 0.5);
-  const dark = mat.plastic(k, 0x2b2d30, 0.55);
+  const dark = mat.dark(k);
+  const steel = dark;
   const paper = mat.paper(k);
   const w = 0.56;
   const d = 0.5;
@@ -51,7 +51,7 @@ function printerStand(k: PropKit): void {
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) {
       k.box(0.025, top - 0.11, 0.025, steel, sx * (w / 2 - 0.02), (top + 0.11) / 2 - 0.012, sz * (d / 2 - 0.02));
-      caster(k, sx * (w / 2 - 0.035), sz * (d / 2 - 0.035), 0.1, 0.03, steel, mat.rubber(k), rr(k, 0, Math.PI * 2));
+      caster(k, sx * (w / 2 - 0.035), sz * (d / 2 - 0.035), 0.1, 0.03, steel, dark, rr(k, 0, Math.PI * 2));
     }
   }
   // printer: body, output well with fresh sheets, control panel, paper drawer
@@ -62,18 +62,17 @@ function printerStand(k: PropKit): void {
   bev(k, 0.4, 0.07, 0.02, shell, 0, py + 0.04, 0.185, 0.006, { cast: false });
   k.box(0.14, 0.008, 0.008, dark, 0, py + 0.06, 0.197, { cast: false });
   bev(k, 0.13, 0.05, 0.03, dark, 0.12, py + 0.27, 0.17, 0.006, { rx: -0.5, cast: false });
-  const lcd = ledMat(k, 0x9fd28a, 0.5);
+  const lcd = ledMat(k, 0x7fd08a, 0.6);
   k.box(0.05, 0.016, 0.002, lcd, 0.1, py + 0.275, 0.187, { rx: -0.5, cast: false });
-  const ready = ledMat(k, 0x45d07a, 1);
+  const ready = lcd;
   k.box(0.006, 0.006, 0.004, ready, 0.165, py + 0.268, 0.188, { rx: -0.5, cast: false });
   watchPower(k, (on) => {
-    lcd.emissiveIntensity = on ? 0.5 : 0;
-    ready.emissiveIntensity = on ? 1 : 0;
+    lcd.emissiveIntensity = on ? 0.6 : 0;
   });
-  k.tube(cablePts([0.15, py + 0.1, -0.22], [0.2, 0.02, -0.3], 0.05, 6), 0.004, dark, { cast: false });
+  line(k, cablePts([0.15, py + 0.1, -0.22], [0.2, 0.02, -0.3], 0.05, 6), 0.004, dark, { cast: false });
   // reams and a case of paper on the lower shelf
   for (let i = 0; i < 3; i++) bev(k, 0.22, 0.054, 0.29, paper, -0.12 + rr(k, -0.01, 0.01), 0.21 + i * 0.055, -0.04, 0.004, { ry: rr(k, -0.06, 0.06) });
-  bev(k, 0.22, 0.28, 0.3, mat.cardboard(k), 0.14, 0.32, 0.0, 0.004, { ry: rr(k, -0.1, 0.1) });
+  bev(k, 0.22, 0.28, 0.3, lam, 0.14, 0.32, 0.0, 0.004, { ry: rr(k, -0.1, 0.1) });
 }
 
 // ---------------------------------------------------------------------------
@@ -113,26 +112,24 @@ const medCabinet: PropBuilder = (k) => {
   for (const s of [-1, 1]) {
     // tall auxiliary towers
     const x = s * (mainW / 2 + 0.01 + auxW / 2);
-    bev(k, auxW, 0.08, d - 0.04, mat.plastic(k, 0x1f2022, 0.7), x, 0.04, -0.01, 0.006);
-    k.rbox(auxW, 1.72, d, shell, x, 0.08 + 0.86, 0, 0.015);
+    bev(k, auxW, 0.08, d - 0.04, dark, x, 0.04, -0.01, 0.006);
+    bev(k, auxW, 1.72, d, shell, x, 0.08 + 0.86, 0, 0.015);
     drawers(x, auxW - 0.04, 0.12, 1.74, 9, s < 0 ? 1 : 2, false);
     bev(k, auxW + 0.004, 0.035, d + 0.004, trim, x, 1.82, 0, 0.008);
   }
   // main console: matrix drawers, projecting work shelf, keyboard, badge reader, screen riser
-  k.rbox(mainW, 0.94, d, shell, 0, 0.08 + 0.47, 0, 0.015);
-  bev(k, mainW, 0.08, d - 0.04, mat.plastic(k, 0x1f2022, 0.7), 0, 0.04, -0.01, 0.006);
+  bev(k, mainW, 0.94, d, shell, 0, 0.08 + 0.47, 0, 0.015);
+  bev(k, mainW, 0.08, d - 0.04, dark, 0, 0.04, -0.01, 0.006);
   drawers(0, mainW - 0.04, 0.12, 0.98, 5, 3, true);
   bev(k, mainW + 0.02, 0.03, d + 0.12, trim, 0, 1.035, 0.06, 0.008);
   bev(k, 0.4, 0.018, 0.14, dark, -0.02, 1.059, zf - 0.02, 0.005, { cast: false });
   for (let r = 0; r < 4; r++) k.box(0.36, 0.005, 0.022, trim, -0.02, 1.07, zf - 0.075 + r * 0.03, { cast: false });
   bev(k, 0.08, 0.04, 0.1, dark, mainW / 2 - 0.08, 1.07, zf + 0.0, 0.008, { cast: false });
   k.box(0.008, 0.008, 0.003, led, mainW / 2 - 0.08, 1.092, zf + 0.04, { cast: false });
-  k.rbox(mainW - 0.08, 0.5, 0.2, shell, 0, 1.3, -d / 2 + 0.12, 0.02);
+  soft(k, mainW - 0.08, 0.5, 0.2, shell, 0, 1.3, -d / 2 + 0.12, 0.02);
   bev(k, 0.4, 0.31, 0.012, dark, 0, 1.33, -d / 2 + 0.226, 0.004);
-  // return bin slot and a blue status strip on top
+  // return-bin slot above the screen
   k.box(0.3, 0.02, 0.01, dark, 0, 1.5, -d / 2 + 0.221, { cast: false });
-  const strip = ledMat(k, 0x5a9cff, 0.6);
-  k.box(mainW - 0.12, 0.012, 0.012, strip, 0, 1.556, -d / 2 + 0.2, { cast: false });
 
   let powered = true;
   const offLook: ScreenLook = { kind: 'off', refresh: 0, brightness: 0.4, glow: 0, glowColor: 0x9cc2ea };
@@ -152,7 +149,6 @@ const medCabinet: PropBuilder = (k) => {
   watchPower(k, (on) => {
     powered = on;
     led.emissiveIntensity = on ? 0.9 : 0;
-    strip.emissiveIntensity = on ? 0.6 : 0;
     if (!on) amber.emissiveIntensity = 0;
     rig.set(rig.mode());
   });
@@ -164,21 +160,21 @@ const medCabinet: PropBuilder = (k) => {
 
 const locker: PropBuilder = (k) => {
   const n = Math.max(1, Math.round(k.num('count', 2)));
-  const lw = k.num('lockerW', 0.45);
+  const lw = clamp(k.num('lockerW', k.def.footprint ? k.def.footprint.w / n : 0.45), 0.3, 0.6);
   const d = k.num('d', k.def.footprint?.d ?? 0.5);
   const H = 1.8;
   const base = 0.1;
   const L = n * lw;
   const body = mat.painted(k, vary(k, pick(k, [0x6c776f, 0x737a82, 0x868579]), 0.04), 0.5);
-  const inside = mat.plastic(k, 0x2a2c2e, 0.8);
-  const slot = mat.plastic(k, 0x121315, 0.85);
+  const slot = mat.dark(k);
+  const inside = slot;
   const chrome = mat.chrome(k);
   const paper = mat.paper(k);
   const zf = d / 2;
   const first = Math.round(k.num('start', 11 + Math.floor(k.rand() * 30)));
   const ajar = 0;
   // plinth, shared side panels, top
-  bev(k, L - 0.02, base, d - 0.06, mat.plastic(k, 0x1f2022, 0.7), 0, base / 2, -0.02, 0.006);
+  bev(k, L - 0.02, base, d - 0.06, slot, 0, base / 2, -0.02, 0.006);
   for (let i = 0; i <= n; i++) bev(k, 0.012, H, d - 0.02, body, -L / 2 + i * lw + (i === 0 ? 0.006 : i === n ? -0.006 : 0), base + H / 2, -0.01, 0.003);
   bev(k, L, 0.014, d - 0.02, body, 0, base + H + 0.007, -0.01, 0.003);
   for (let i = 0; i < n; i++) {
@@ -190,8 +186,8 @@ const locker: PropBuilder = (k) => {
       k.box(lw - 0.012, 0.01, d - 0.04, inside, cx, base + 0.005, -0.01, { cast: false });
       k.box(lw - 0.012, 0.01, d - 0.06, inside, cx, base + H - 0.3, -0.02, { cast: false });
       k.cyl(0.006, 0.006, 0.05, chrome, cx, base + H - 0.38, -d / 2 + 0.035, { axis: 'z', seg: 6, cast: false });
-      k.rbox(lw * 0.62, 0.62, 0.16, mat.fabric(k, pick(k, [0x2b2f36, 0x3a342d]), 0.95), cx + 0.01, base + H - 0.72, -d / 2 + 0.11, 0.06, { rz: rr(k, -0.06, 0.06) });
-      k.cyl(0.07, 0.065, 0.14, mat.plastic(k, 0x3a3f46, 0.6), cx - 0.06, base + 0.08, -0.06, { seg: 10, cast: false });
+      soft(k, lw * 0.62, 0.62, 0.16, mat.fabric(k, pick(k, [0x2b2f36, 0x3a342d]), 0.95), cx + 0.01, base + H - 0.72, -d / 2 + 0.11, 0.06, { rz: rr(k, -0.06, 0.06) });
+      k.cyl(0.07, 0.065, 0.14, slot, cx - 0.06, base + 0.08, -0.06, { seg: 10, cast: false });
     } else {
       k.box(lw - 0.012, H - 0.004, d - 0.04, inside, cx, base + H / 2, -0.03);
     }

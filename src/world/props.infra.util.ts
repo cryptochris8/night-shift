@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { PowerState, RoomDef } from '../core/types';
+import type { SignKind } from '../render/textures';
 import type { MeshOpts, PropKit } from './props';
 
 // ---------------------------------------------------------------------------
@@ -224,6 +225,26 @@ export function decalMat(k: PropKit, key: string, tex: () => THREE.Texture, p: T
   });
 }
 
+/**
+ * Sign plane from textures.signTexture at a usable resolution (PropKit.sign rasterises at 400 px/m,
+ * which leaves small plates like room numbers and call buttons blurry). Shared per text/kind/size.
+ */
+export function signPlane(k: PropKit, text: string, kind: SignKind, w: number, h: number, x = 0, y = 0, z = 0, o: MeshOpts & { emissive?: number } = {}): THREE.Mesh {
+  const pw = Math.min(1536, Math.max(256, Math.round(w * 1000)));
+  const ph = Math.max(32, Math.round((pw * h) / w));
+  const mat = k.shared(`infra:sign:${kind}:${text}:${pw}x${ph}:${o.emissive ?? 0}`, () => {
+    const tex = k.t.signTexture(text, { kind, width: pw, height: ph });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0.05, transparent: true });
+    if (o.emissive) {
+      m.emissive.setHex(0xffffff);
+      m.emissiveMap = tex;
+      m.emissiveIntensity = o.emissive;
+    }
+    return m;
+  });
+  return k.plane(w, h, mat, x, y, z, o);
+}
+
 /** Mark an object as animated/swapped: never merged, never picked as the interaction highlight carrier. */
 export function live<T extends THREE.Object3D>(o: T): T {
   o.userData.keep = true;
@@ -291,6 +312,13 @@ export function coilPoints(a: [number, number, number], b: [number, number, numb
     out.push([p.x, p.y, p.z]);
   }
   return out;
+}
+
+/** Smooth cord through points (Catmull-Rom, 4-sided; owned, merged by finish). Cheaper than tube() for coils. */
+export function cord(k: PropKit, pts: [number, number, number][], r: number, mat: THREE.Material, o: MeshOpts = {}): THREE.Mesh {
+  const curve = new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+  const g = k.own(new THREE.TubeGeometry(curve, Math.max(8, Math.round(pts.length * 1.5)), r, 4, false));
+  return k.mesh(g, mat, 0, 0, 0, { cast: false, ...o });
 }
 
 /**

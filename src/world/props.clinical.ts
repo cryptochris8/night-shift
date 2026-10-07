@@ -21,8 +21,9 @@ import { FIXTURE_BUILDERS } from './props.clinical.fixtures';
 import { SCREEN_BUILDERS } from './props.clinical.screens';
 import { SEATING_BUILDERS } from './props.clinical.seating';
 import { STORAGE_BUILDERS } from './props.clinical.storage';
+import { unifyShadows } from './props.clinical.common';
 
-export const CLINICAL_BUILDERS: Partial<Record<PropType, PropBuilder>> = {
+const ALL: Partial<Record<PropType, PropBuilder>> = {
   ...BED_BUILDERS,
   ...CART_BUILDERS,
   ...CURTAIN_BUILDERS,
@@ -33,3 +34,14 @@ export const CLINICAL_BUILDERS: Partial<Record<PropType, PropBuilder>> = {
   ...FIXTURE_BUILDERS,
   ...APPLIANCE_BUILDERS,
 };
+
+/** Every builder runs through unifyShadows so each material merges into a single draw call. */
+export const CLINICAL_BUILDERS: Partial<Record<PropType, PropBuilder>> = Object.fromEntries(
+  (Object.entries(ALL) as [PropType, PropBuilder][]).map(([type, build]): [PropType, PropBuilder] => [
+    type,
+    (k) => {
+      build(k);
+      unifyShadows(k);
+    },
+  ]),
+);
