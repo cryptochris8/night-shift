@@ -60,6 +60,8 @@ class Game implements IGameController {
   private qualityLevel: 'low' | 'medium' | 'high' = 'high';
   private screenshotMode = false;
   private switching = false;
+  private debugEl: HTMLDivElement | null = null;
+  private debugAccum = 0;
 
   constructor() {
     const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -78,7 +80,8 @@ class Game implements IGameController {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // r186 removed PCFSoftShadowMap; its late fallback leaves early-compiled materials with the wrong sampler type
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
 
@@ -151,22 +154,29 @@ class Game implements IGameController {
     window.addEventListener('resize', () => this.resize());
     this.resize();
 
-    // Title screen
-    s.store.setScreen('title');
+    const hash = readHash();
+    // Title screen (skipped when restarting a night: a plain prompt waits for the audio gesture instead)
+    if (!hash.auto) s.store.setScreen('title');
     document.getElementById('boot')?.classList.add('hidden');
     setTimeout(() => document.getElementById('boot')?.remove(), 900);
 
     this.exposeDebug();
+    if (hash.debug) this.enableDebugOverlay();
     this.running = true;
     this.last = performance.now();
     requestAnimationFrame(this.frame);
 
-    const hash = readHash();
     if (hash.auto) {
-      // Auto-start after the first user gesture (audio policy)
-      const start = () => {
+      // Auto-start after the first user gesture (browsers only allow audio after one)
+      const prompt = document.createElement('div');
+      prompt.className = 'ns-autostart';
+      prompt.innerHTML = '<div class="ns-autostart__title">NIGHT SHIFT</div><div class="ns-autostart__sub">Click or press any key to begin the night</div>';
+      document.getElementById('app')?.appendChild(prompt);
+      const start = (e: Event): void => {
+        e.preventDefault();
         window.removeEventListener('pointerdown', start);
         window.removeEventListener('keydown', start);
+        prompt.remove();
         void this.newGame(hash.seed);
       };
       window.addEventListener('pointerdown', start);
@@ -203,7 +213,15 @@ class Game implements IGameController {
     this.qualityLevel = q;
     const { renderer } = this.services.three;
     renderer.setPixelRatio(q === 'high' ? Math.min(window.devicePixelRatio, 1.5) : q === 'medium' ? 1 : 0.75);
-    renderer.shadowMap.enabled = q !== 'low';
+    const shadows = q !== 'low';
+    if (renderer.shadowMap.enabled !== shadows) {
+      renderer.shadowMap.enabled = shadows;
+      // shadow samplers are compiled into programs; force every material to rebuild
+      this.services.three.scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material;
+        if (m) for (const mat of Array.isArray(m) ? m : [m]) mat.needsUpdate = true;
+      });
+    }
     this.services.postfx.setQuality(q);
     this.resize();
   }
@@ -212,7 +230,20 @@ class Game implements IGameController {
   // Game flow
   // ---------------------------------------------------------------------------
 
+  private starting = false;
+
   async newGame(seedCode?: string): Promise<void> {
+    // a double click on New Shift (or a menu click racing the auto-start) must not start two nights
+    if (this.starting) return;
+    this.starting = true;
+    try {
+      await this.startNight(seedCode);
+    } finally {
+      this.starting = false;
+    }
+  }
+
+  private async startNight(seedCode?: string): Promise<void> {
     const s = this.services;
     const seed = seedCode ? normalizeSeedCode(seedCode) : makeSeedCode(Date.now() ^ Math.floor(Math.random() * 0xffffffff));
     const settings = s.store.get().settings;
@@ -444,8 +475,42 @@ class Game implements IGameController {
       }
     }
 
+    if (this.debugEl) this.updateDebugOverlay(dt);
     s.input.endFrame();
   };
+
+  private enableDebugOverlay(): void {
+    const el = document.createElement('div');
+    el.id = 'ns-debug';
+    el.style.cssText =
+      'position:fixed;left:8px;bottom:8px;z-index:9999;font:11px/1.35 Consolas,monospace;color:#9fd3a6;background:rgba(0,0,0,.55);padding:6px 8px;pointer-events:none;white-space:pre;max-width:46vw;';
+    document.body.appendChild(el);
+    this.debugEl = el;
+  }
+
+  private updateDebugOverlay(dt: number): void {
+    this.debugAccum += dt;
+    if (this.debugAccum < 0.25 || !this.debugEl) return;
+    this.debugAccum = 0;
+    const s = this.services;
+    const st = s.store.get();
+    const chars = (['john', 'susie', 'paul'] as const)
+      .map((id) => {
+        const c = st.characters[id];
+        return `${id[0].toUpperCase()} ${c.location.padEnd(13)} d=${c.danger.toFixed(2)}${c.missing ? ' MISSING' : ''}`;
+      })
+      .join('\n');
+    const next = s.director
+      .schedule()
+      .filter((e) => e.at >= st.time)
+      .slice(0, 5)
+      .map((e) => `  ${e.at.toFixed(1).padStart(6)} ${e.id}`)
+      .join('\n');
+    this.debugEl.textContent =
+      `t=${st.time.toFixed(2)} ${st.phase} power=${st.power} snd=${st.sound} view=${st.activeView}${st.activeCamera ? ':' + st.activeCamera : ''}\n` +
+      `seed=${st.seed} fired=${st.fired.length} wit=${st.witnessed.length} miss=${st.missed.length} clues=${st.clues.length} thr=${st.threat.toFixed(2)} q=${this.qualityLevel}\n` +
+      `${chars}\nnext:\n${next}`;
+  }
 
   // ---------------------------------------------------------------------------
   // Debug

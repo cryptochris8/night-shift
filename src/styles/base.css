@@ -85,3 +85,34 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .boot { transition: none; }
 }
+
+/* Restart / New Night auto-start prompt (main.ts) */
+.ns-autostart {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  background: radial-gradient(ellipse at center, rgba(5, 7, 8, 0.72), rgba(2, 3, 4, 0.96));
+  cursor: pointer;
+  text-align: center;
+}
+.ns-autostart__title {
+  font-family: var(--ns-font-display);
+  letter-spacing: 0.42em;
+  font-size: clamp(20px, 3.4vw, 34px);
+  color: #cfd6d0;
+}
+.ns-autostart__sub {
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ns-ink-dim);
+  animation: ns-autostart-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ns-autostart-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}

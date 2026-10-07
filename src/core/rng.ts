@@ -80,12 +80,12 @@ const SEED_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 /** Make a human-readable Night Seed code from a numeric source (e.g. Date.now()). */
 export function makeSeedCode(source: number): string {
-  let n = (source >>> 0) ^ 0x5bd1e995;
+  // keep every intermediate unsigned: a negative n would index past the alphabet
+  let n = ((source >>> 0) ^ 0x5bd1e995) >>> 0;
   let out = '';
   for (let i = 0; i < 6; i++) {
     out += SEED_ALPHABET[n % SEED_ALPHABET.length];
-    n = Math.floor(n / SEED_ALPHABET.length) ^ ((n * 2654435761) >>> 0);
-    n = n >>> 0;
+    n = (Math.floor(n / SEED_ALPHABET.length) ^ Math.imul(n, 0x9e3779b1)) >>> 0;
   }
   return `NS-${out.slice(0, 3)}-${out.slice(3)}`;
 }
