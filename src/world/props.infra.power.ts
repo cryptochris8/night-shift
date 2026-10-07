@@ -114,7 +114,7 @@ function mainPanel(k: PropKit): void {
   });
 }
 
-/** Branch panel LP-2E: door ajar on the dead-front; the seven zone breakers and LEDs track the store. */
+/** Branch panel LP-2E, door swung open on the dead-front; the seven zone breakers and their LEDs track the store. */
 function zonesPanel(k: PropKit): void {
   const W = 0.56;
   const H = 1.05;

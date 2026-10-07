@@ -56,7 +56,7 @@ export function baseSchedules(): Record<CharacterId, ScheduleEntry[]> {
     // 23:00 paged to triage (the director widens d_triage first)
     E(15, 'triage', POSE.johnTriageChair.x, POSE.johnTriageChair.z, EAST, 'sit'),
     // 23:05 roomed in Bay 3
-    E(20, 'exam3', POSE.johnBed.x, POSE.johnBed.z, SOUTH, 'lie'),
+    E(20, 'exam3', POSE.johnBed.x, POSE.johnBed.z, NORTH, 'lie'), // lying: head toward the wall
     // generator night: sits up in the dark
     E(83, 'exam3', POSE.johnBed.x, POSE.johnBed.z, SOUTH, 'sit'),
     E(165, 'exam3', POSE.johnBed.x, POSE.johnBed.z, SOUTH, 'sit'),
@@ -129,7 +129,7 @@ export function johnToCounterSchedule(now: number): ScheduleEntry[] {
 
 /** John sedated: back on the bed for the rest of the night. */
 export function johnSedatedSchedule(now: number): ScheduleEntry[] {
-  return [E(Math.max(0, now - 0.01), 'exam3', POSE.johnBed.x, POSE.johnBed.z, SOUTH, 'lie')];
+  return [E(Math.max(0, now - 0.01), 'exam3', POSE.johnBed.x, POSE.johnBed.z, NORTH, 'lie')];
 }
 
 /** Susie answers a room, then returns to the station after `stayMinutes`. */

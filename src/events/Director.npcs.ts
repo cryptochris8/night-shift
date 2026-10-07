@@ -48,8 +48,9 @@ export class NpcCast {
     this.removeAll();
     this.add('npc_marcus', { pos: MARCUS_POS, yaw: 0, outfit: 'clerk', anim: 'work' });
     this.add('npc_haddad', { pos: HADDAD_SEAT, yaw: 0, outfit: 'patient', anim: 'sit' });
-    this.add('npc_alvarez', { pos: ALVAREZ_BED, yaw: 0, outfit: 'patient', anim: 'lie' });
-    this.add('npc_okafor', { pos: OKAFOR_BED, yaw: 0, outfit: 'patient', anim: 'lie' });
+    // lying figures put their head toward local -z, so yaw pi lays them head-to-wall in beds whose head is +z
+    this.add('npc_alvarez', { pos: ALVAREZ_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie' });
+    this.add('npc_okafor', { pos: OKAFOR_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie' });
     const medicA = v3(-25.8, 0, -2.6);
     const medicB = v3(-27.5, 0, -2.9);
     this.add('npc_medic_a', { pos: medicA, yaw: yawToward({ x: medicA.x, z: medicA.z }, AMBULANCE_REAR), outfit: 'paramedic', anim: 'work' });
@@ -276,7 +277,7 @@ export class NpcCast {
       }
       if (!walker.removed) walker.remove(0);
       this.figures.delete('npc_okafor_walk');
-      if (!this.disposed) this.add('npc_okafor', { pos: OKAFOR_BED, yaw: 0, outfit: 'patient', anim: 'lie' });
+      if (!this.disposed) this.add('npc_okafor', { pos: OKAFOR_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie' });
       this.okaforBusy = false;
     })();
     return walker;

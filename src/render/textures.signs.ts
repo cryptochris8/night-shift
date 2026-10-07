@@ -1227,7 +1227,7 @@ function boardAssignments(rng: RNG): HTMLCanvasElement {
   entry(1, 3, 'chest pain — obs, repeat trop 00:30', M_BLUE, 17);
   entry(1, 4, 'S. TRAN', M_BLUE);
   entry(1, 5, 'Osei', M_BLUE);
-  entry(3, 1, 'OKAFOR, D.', M_BLUE);
+  entry(3, 1, 'OKAFOR, E.', M_BLUE);
   entry(3, 2, '42 M', M_BLUE);
   entry(3, 3, 'lac L hand — sutures pending', M_BLUE, 17);
   entry(3, 4, 'S. TRAN', M_BLUE);

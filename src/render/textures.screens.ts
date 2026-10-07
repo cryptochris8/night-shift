@@ -368,8 +368,9 @@ function screenVitals(c: Canvas2D, o: ScreenOpts): void {
   const sweepX = tx0 + ((secs % 6) / 6) * tw;
   const rows = [
     { y: 56, h: 104, color: alarm ? '#ff4a3a' : '#6cff9a', label: 'HR', unit: 'bpm', value: flat ? '0' : String(v.hr), kind: 'ecg' as const, lead: 'II' },
-    { y: 160, h: 86, color: '#55d8ff', label: 'SpO2', unit: '%', value: flat ? '--' : String(v.spo2), kind: 'pleth' as const, lead: 'PLETH' },
-    { y: 246, h: 70, color: '#ffe27a', label: 'RR', unit: '/min', value: flat ? '--' : String(v.rr), kind: 'resp' as const, lead: 'RESP' },
+    // 'flat' is the impossible-vitals anomaly: asystole on the ECG while everything else reads normal
+    { y: 160, h: 86, color: '#55d8ff', label: 'SpO2', unit: '%', value: String(v.spo2), kind: 'pleth' as const, lead: 'PLETH' },
+    { y: 246, h: 70, color: '#ffe27a', label: 'RR', unit: '/min', value: String(v.rr), kind: 'resp' as const, lead: 'RESP' },
   ];
   for (const r of rows) {
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
@@ -388,9 +389,9 @@ function screenVitals(c: Canvas2D, o: ScreenOpts): void {
     const yAt = (x: number): number => {
       const t = (x - tx0) / pxPerSec + secs;
       let yv: number;
-      if (flat) yv = (hash2(x, 1, 3) - 0.5) * 0.02;
+      if (flat && r.kind === 'ecg') yv = (hash2(x, 1, 3) - 0.5) * 0.02;
       else if (r.kind === 'ecg') yv = ecg((t * v.hr) / 60, x);
-      else if (r.kind === 'pleth') yv = pleth((t * v.hr) / 60);
+      else if (r.kind === 'pleth') yv = pleth((t * (v.hr > 0 ? v.hr : 78)) / 60);
       else yv = resp((t * v.rr) / 60);
       return mid - yv * amp;
     };
@@ -438,10 +439,10 @@ function screenVitals(c: Canvas2D, o: ScreenOpts): void {
   ctx.fillText(`mmHg   ${(o.time ?? '22:58').slice(0, 5)}`, 50, by + 14);
   ctx.fillStyle = '#f2f5f7';
   ctx.font = font(34, 800, FONT_MONO);
-  ctx.fillText(flat ? '--/--' : `${v.sys}/${v.dia}`, 12, by + 42);
+  ctx.fillText(`${v.sys}/${v.dia}`, 12, by + 42);
   ctx.font = font(14, 600, FONT_MONO);
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  if (!flat) ctx.fillText(`(${Math.round((v.sys + 2 * v.dia) / 3)})`, 150, by + 46);
+  ctx.fillText(`(${Math.round((v.sys + 2 * v.dia) / 3)})`, 150, by + 46);
   ctx.fillStyle = '#e8eef1';
   ctx.font = font(11, 700, FONT_MONO);
   ctx.fillText('TEMP', 290, by + 14);

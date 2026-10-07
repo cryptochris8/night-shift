@@ -45,6 +45,13 @@ const POSES = [
   ['figure_susie', 'susie', -7.0, 0.2, { x: 17.5, y: 1.3, z: 0.3 }],
 ];
 
+// ad-hoc pose: --pose name,view,x,z,lookX,lookY,lookZ
+const POSE_ARG = arg('--pose', '');
+if (POSE_ARG) {
+  const [n, v, x, z, lx, ly, lz] = POSE_ARG.split(',');
+  POSES.push([n, v, Number(x), Number(z), { x: Number(lx), y: Number(ly), z: Number(lz) }]);
+}
+
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
 server.stderr.on('data', (d) => process.stdout.write(String(d)));
 const start = Date.now();
