@@ -10,6 +10,8 @@ import { CHARACTER_IDS, type CharacterId, type RoomId, type ViewId } from '../co
 import { ROOM_BY_ID } from '../world/layout';
 
 const IDLE_SECONDS = 6;
+/** a changed objective stands out this long (and survives the idle fade) before settling back */
+const OBJECTIVE_NEW_SECONDS = 7;
 const WARN_HOLD_SECONDS = 4.5;
 const RING_R = 21;
 const RING_C = 2 * Math.PI * RING_R;
@@ -86,6 +88,9 @@ export class Hud {
   private objective: string | null = null;
   private objectiveTimer = 0;
   private pendingObjective: string | null | undefined;
+  private objectiveNew = 0;
+  /** whose objective was last on screen: a change for the same person is "new", a switch just shows theirs */
+  private objectiveFor: ViewId | null = null;
   private lastClock = '';
   private lastLocation: RoomId | null = null;
   private lastView: ViewId | null = null;
@@ -104,6 +109,7 @@ export class Hud {
   private clockM: HTMLElement;
   private clockAp: HTMLElement;
   private objectiveEl: HTMLElement;
+  private objectiveWrap: HTMLElement;
   private promptEl: HTMLElement;
   private promptKey: HTMLElement;
   private promptText: HTMLElement;
@@ -149,6 +155,7 @@ export class Hud {
     this.clockM = q('.ns-clock__m');
     this.clockAp = q('.ns-clock__ap');
     this.objectiveEl = q('.ns-objective');
+    this.objectiveWrap = q('.ns-hud__bl');
     this.promptEl = q('.ns-prompt');
     this.promptKey = q('.ns-key');
     this.promptText = q('.ns-prompt__text');
@@ -311,6 +318,17 @@ export class Hud {
         this.pendingObjective = undefined;
         this.objectiveEl.textContent = this.objective ?? '';
         this.objectiveEl.classList.remove('is-swapping');
+        this.objectiveNew = this.objective ? OBJECTIVE_NEW_SECONDS : 0;
+        this.objectiveEl.dataset.label = view === this.objectiveFor ? 'NEW OBJECTIVE' : 'OBJECTIVE';
+        if (this.objective) this.objectiveFor = view;
+        this.objectiveEl.classList.toggle('is-new', this.objectiveNew > 0);
+        this.objectiveWrap.classList.toggle('is-pinned', this.objectiveNew > 0);
+      }
+    } else if (this.objectiveNew > 0) {
+      this.objectiveNew -= dt;
+      if (this.objectiveNew <= 0) {
+        this.objectiveEl.classList.remove('is-new');
+        this.objectiveWrap.classList.remove('is-pinned');
       }
     }
 

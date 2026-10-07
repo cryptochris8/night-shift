@@ -5,7 +5,7 @@
  */
 import './ui.css';
 import type { Services, DialogueOption, DocumentView, HudState, IUIManager } from '../core/contracts';
-import type { CharacterId, Clue, EndingId, Screen } from '../core/types';
+import type { CharacterId, Clue, EndingId, Screen, ViewId } from '../core/types';
 import { Hud } from './hud';
 import { Captions, CCTVOverlay, Subtitles, Toasts } from './UIManager.overlays';
 import { Screens, type MenuScreen, type PadAction } from './screens';
@@ -13,6 +13,7 @@ import { EndingScreen } from './UIManager.ending';
 import { TouchControls } from './touch';
 import { Switcher } from './switcher';
 import { Documents } from './documents';
+import { Tutorial } from './tutorial';
 
 interface SwitcherLike {
   open(): void;
@@ -20,6 +21,7 @@ interface SwitcherLike {
   readonly isOpen: boolean;
   update(dt: number): void;
   warn(id: CharacterId, level: number, hint?: string): void;
+  setTutorialHint(text: string | null, target: ViewId | null): void;
   dispose(): void;
 }
 
@@ -47,6 +49,8 @@ export class UIManager implements IUIManager {
   private touch!: TouchControls;
   private switcher!: SwitcherLike;
   private documents!: DocumentsLike;
+  private tutorial!: Tutorial;
+  private tutLayer!: HTMLElement;
 
   private screen: Screen = 'boot';
   private hudVisible = true;
@@ -86,6 +90,17 @@ export class UIManager implements IUIManager {
 
     this.switcher = new Switcher(services, uiRoot);
     this.documents = new Documents(services, uiRoot);
+
+    // the walkthrough card sits above the perspective console (it points into it) and below the menus
+    this.tutLayer = document.createElement('div');
+    this.tutLayer.className = 'ns-root ns-root--tut';
+    uiRoot.appendChild(this.tutLayer);
+    this.tutorial = new Tutorial(services, this.tutLayer, {
+      modalOpen: () => this.modalOpen,
+      switcherOpen: () => this.switcher.isOpen,
+      hudVisible: () => this.hudVisible,
+      switcherHint: (text, target) => this.switcher.setTutorialHint(text, target),
+    });
 
     this.rootTop = document.createElement('div');
     this.rootTop.className = 'ns-root ns-root--top';
@@ -145,6 +160,7 @@ export class UIManager implements IUIManager {
     this.screens.update(dt);
     this.ending.update(dt);
     this.switcher.update(dt);
+    this.tutorial.update(dt);
     this.touch.update();
     this.touch.setPromptAvailable(this.hud.hasPrompt && st.activeView !== 'cctv');
 
@@ -208,7 +224,9 @@ export class UIManager implements IUIManager {
     this.touch.dispose();
     this.switcher.dispose();
     this.documents.dispose();
+    this.tutorial.dispose();
     this.root.remove();
+    this.tutLayer.remove();
     this.rootTop.remove();
   }
 
@@ -281,6 +299,23 @@ export class UIManager implements IUIManager {
   warn(character: CharacterId, level: number, hint?: string): void {
     this.hud.warn(character, level, hint);
     this.switcher.warn(character, level, hint);
+    this.tutorial.onWarn(character, level);
+  }
+
+  startTutorial(): void {
+    this.tutorial.start();
+  }
+
+  skipTutorial(): void {
+    this.tutorial.skip();
+  }
+
+  get tutorialActive(): boolean {
+    return this.tutorial.active;
+  }
+
+  get tutorialClockCap(): number | null {
+    return this.tutorial.clockCap;
   }
 
   setCCTVOverlay(p: { visible: boolean; cameras?: { id: string; name: string; online: boolean; active: boolean }[]; timestamp?: string; label?: string; online?: boolean }): void {

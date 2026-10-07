@@ -113,6 +113,8 @@ try {
 
   // user gesture for audio policy
   await page.mouse.click(640, 360);
+  // QA runs skip the first-night walkthrough (it holds the clock at 22:59 until John has learned the controls)
+  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false }));
   await page.evaluate((seed) => window.__NS.newGame(seed), SEED);
   await waitFor('intro started', async () => (await state())?.screen === 'intro', 20000);
   await sleep(2500);

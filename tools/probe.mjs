@@ -32,6 +32,8 @@ await page.goto(`http://127.0.0.1:${PORT}/`);
 await page.waitForFunction(() => window.__NS?.ready, null, { timeout: 60000 });
 if (args.includes('--play')) {
   await page.mouse.click(5, 5);
+  // QA runs skip the first-night walkthrough (it holds the clock at 22:59 until John has learned the controls)
+  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false }));
   await page.evaluate(() => window.__NS.newGame('NS-PRB-001'));
   await page.waitForFunction(() => window.__NS.state().screen === 'intro', null, { timeout: 30000 });
   await new Promise((r) => setTimeout(r, 1200));

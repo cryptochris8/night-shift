@@ -48,6 +48,7 @@ const SETTINGS_ROWS: Row[] = [
       { value: 'hard', label: 'Hard', desc: 'Danger builds faster, fewer warnings.' },
     ],
   },
+  { key: 'tutorial', label: 'Tutorial', kind: 'toggle', desc: 'Walks through the controls at the start of the next night, with a few first-time tips. Turns itself off once finished.' },
   { key: 'mouseSensitivity', label: 'Mouse sensitivity', kind: 'range', min: 0.2, max: 3, step: 0.1, format: (v) => v.toFixed(1) + '×' },
   { key: 'invertY', label: 'Invert look', kind: 'toggle' },
   { key: 'motionEffects', label: 'Motion effects', kind: 'toggle', desc: 'Head bob, breathing distortion, camera shake.' },
@@ -97,6 +98,7 @@ export class Screens {
   private panels = {} as Record<MenuScreen, HTMLElement>;
   private seedInput!: HTMLInputElement;
   private resumeBtn!: HTMLElement;
+  private skipTutBtn!: HTMLElement;
   private pauseClock!: HTMLElement;
   private pauseSeed!: HTMLElement;
   private titleClock!: HTMLElement;
@@ -208,6 +210,7 @@ export class Screens {
         </header>
         <nav class="ns-menu" aria-label="pause menu">
           <button class="ns-item ns-btn" data-act="resume">Resume</button>
+          <button class="ns-item ns-btn" data-act="skiptutorial" hidden>Skip tutorial</button>
           <button class="ns-item ns-btn" data-act="settings">Settings</button>
           <button class="ns-item ns-btn" data-act="controls">Controls</button>
           <button class="ns-item ns-btn ns-btn--confirm" data-act="restart" data-confirm="Restart — same seed. Sure?">Restart this night</button>
@@ -217,6 +220,7 @@ export class Screens {
       </div>
     `,
     );
+    this.skipTutBtn = this.panels.paused.querySelector('[data-act="skiptutorial"]') as HTMLElement;
     this.pauseClock = this.panels.paused.querySelector('.ns-pause__clock') as HTMLElement;
     this.pauseSeed = this.panels.paused.querySelector('.ns-pause__seed') as HTMLElement;
   }
@@ -300,6 +304,7 @@ export class Screens {
       this.titleClock.textContent = formatClock12(this.s.clock.time);
     }
     if (screen === 'paused') {
+      this.skipTutBtn.hidden = !this.s.ui.tutorialActive;
       this.pauseSeed.textContent = this.s.store.get().seed;
       this.pauseClock.textContent = formatClock12(this.s.clock.time);
     }
@@ -455,6 +460,11 @@ export class Screens {
         break;
       case 'resume':
         this.sfx('ui_select');
+        this.s.game.resume();
+        break;
+      case 'skiptutorial':
+        this.sfx('ui_select');
+        this.s.ui.skipTutorial();
         this.s.game.resume();
         break;
       case 'settings':

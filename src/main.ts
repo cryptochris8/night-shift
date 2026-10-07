@@ -21,6 +21,7 @@ import { InteractionSystem } from './interact/InteractionSystem';
 import { CCTVSystem } from './cctv/CCTVSystem';
 import { UIManager } from './ui/UIManager';
 import { EventDirector } from './events/Director';
+import { heldTime } from './ui/tutorial.flow';
 
 declare global {
   interface Window {
@@ -327,6 +328,7 @@ class Game implements IGameController {
     s.ui.showScreen('playing');
     s.clock.running = true;
     if (!s.input.isTouch) s.input.requestLock();
+    s.ui.startTutorial();
   }
 
   async restart(): Promise<void> {
@@ -479,7 +481,14 @@ class Game implements IGameController {
     // Game time
     let gdt = 0;
     if (playing && !s.cinematic.playing) {
+      const before = s.clock.time;
       gdt = s.clock.advance(dt);
+      // first night: the walkthrough keeps the clock short of the 23:00 page while John is still learning to move
+      const held = heldTime(before, s.clock.time, s.ui.tutorialClockCap);
+      if (held !== s.clock.time) {
+        s.clock.set(held);
+        gdt = Math.max(0, held - before);
+      }
       s.store.update((d) => {
         d.time = s.clock.time;
         d.realElapsed += dt;

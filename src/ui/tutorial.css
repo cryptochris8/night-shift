@@ -1,0 +1,159 @@
+/* NIGHT SHIFT — first-night walkthrough card (src/ui/tutorial.ts) and its line in the perspective console.
+   Same language as the HUD: dark plate, hairline rules, mono labels, one phosphor accent. */
+
+/* own layer: above the perspective console (3), below menus (5) */
+#ui > .ns-root--tut { z-index: 4; }
+
+.ns-tut {
+  position: absolute;
+  left: var(--ns-safe-l);
+  top: calc(var(--ns-safe-t) + 132px);
+  width: min(340px, 38vw);
+  padding: 12px 14px 12px 15px;
+  border: 1px solid rgba(185, 240, 201, 0.2);
+  border-left: 2px solid var(--ns-phos);
+  background: linear-gradient(180deg, rgba(5, 9, 8, 0.88), rgba(3, 5, 6, 0.8));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  color: var(--ns-ink);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.4s ease, visibility 0s linear 0.35s;
+}
+.ns-tut.is-in {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.4s ease, visibility 0s;
+}
+.ns-tut.is-in.is-swapping { opacity: 0; transform: translateX(-6px); transition-duration: 0.2s; }
+.ns-tut.is-done { border-color: rgba(185, 240, 201, 0.5); }
+.ns-tut[data-kind='tip'] { border-left-color: var(--ns-amber); }
+
+.ns-tut__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 7px;
+  font-family: var(--ns-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+}
+.ns-tut__kicker { color: var(--ns-phos); }
+.ns-tut[data-kind='tip'] .ns-tut__kicker { color: var(--ns-amber); }
+.ns-tut.is-done .ns-tut__kicker::after { content: '  \2713'; color: var(--ns-accent); }
+.ns-tut__progress { color: var(--ns-ink-dim); letter-spacing: 0.18em; }
+.ns-tut__title {
+  font-family: var(--ns-font-display);
+  font-size: 15.5px;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  color: #eef1ec;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ns-tut__checks { list-style: none; display: grid; gap: 7px; margin: 10px 0 0; padding: 0; }
+.ns-tut__checks li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ns-ink);
+  transition: color 0.3s ease;
+}
+.ns-tut__checks li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 11px;
+  height: 11px;
+  border: 1px solid rgba(216, 220, 214, 0.45);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.ns-tut__checks li.is-done { color: var(--ns-ink-dim); }
+.ns-tut__checks li.is-done::before {
+  background: var(--ns-phos);
+  border-color: var(--ns-phos);
+  box-shadow: 0 0 8px rgba(159, 211, 166, 0.5);
+}
+.ns-tut__checks li.is-done::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 7px;
+  width: 5px;
+  height: 3px;
+  border-left: 1.5px solid #071009;
+  border-bottom: 1.5px solid #071009;
+  transform: rotate(-45deg);
+}
+
+.ns-tut__lines p { margin: 7px 0 0; font-size: 13px; line-height: 1.55; color: rgba(216, 220, 214, 0.88); }
+.ns-tut__checks + .ns-tut__lines p:first-child { margin-top: 9px; }
+.ns-tut .ns-key { height: 19px; min-width: 19px; margin: 0 2px; vertical-align: 1px; font-size: 10.5px; }
+
+.ns-tut__timer { height: 1px; margin-top: 11px; background: rgba(216, 220, 214, 0.1); }
+.ns-tut__timer i {
+  display: block;
+  height: 100%;
+  background: var(--ns-phos);
+  opacity: 0.7;
+  transform-origin: left center;
+}
+.ns-tut[data-kind='tip'] .ns-tut__timer i { background: var(--ns-amber); }
+.ns-tut__foot {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(216, 220, 214, 0.1);
+  font-family: var(--ns-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(142, 148, 143, 0.75);
+}
+
+/* The perspective console's own line during the console step, and the card it points at */
+.ns-switcher__tut {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 20px;
+  border-top: 1px solid rgba(159, 211, 166, 0.3);
+  background: rgba(159, 211, 166, 0.08);
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ns-accent);
+}
+.ns-switcher__tut[hidden] { display: none; }
+.ns-switcher__tut .ns-key { margin: 0 2px; }
+/* inset, so the scrolling card list cannot clip the ring */
+.ns-card.is-tut-target { animation: ns-tut-target 1.5s ease-in-out infinite; }
+@keyframes ns-tut-target {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(185, 240, 201, 0.95), inset 0 0 28px rgba(185, 240, 201, 0.16); }
+  50% { box-shadow: inset 0 0 0 2px rgba(185, 240, 201, 0.5), inset 0 0 12px rgba(185, 240, 201, 0.05); }
+}
+
+@media (max-width: 640px) {
+  .ns-tut { top: calc(var(--ns-safe-t) + 104px); width: min(300px, 66vw); padding: 10px 12px 10px 13px; }
+  .ns-tut__title { font-size: 14px; }
+  .ns-tut__lines p,
+  .ns-tut__checks li { font-size: 12px; }
+}
+/* phone in landscape: the identity block takes the top-left, so sit above the objective instead */
+@media (max-height: 440px) {
+  .ns-tut { top: auto; bottom: calc(var(--ns-safe-b) + 84px); width: min(320px, 42vw); padding: 9px 12px 9px 13px; }
+  .ns-tut__title { font-size: 13.5px; }
+  .ns-tut__lines p,
+  .ns-tut__checks li { font-size: 11.5px; line-height: 1.45; }
+  .ns-tut__foot { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ns-tut,
+  .ns-tut.is-in { transition-duration: 0.01s; }
+  .ns-card.is-tut-target { animation: none; box-shadow: inset 0 0 0 2px rgba(185, 240, 201, 0.95); }
+}

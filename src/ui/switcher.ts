@@ -13,6 +13,7 @@ import { CHARACTER_IDS } from '../core/types';
 import { FloorPlan } from './floorplan';
 import { ActionPoller, PANEL_ACTIONS } from './switcher.input';
 import { cctvGlyphSVG, portraitSVG } from './switcher.portraits';
+import { renderRich } from './tutorial';
 
 const ORDER: readonly ViewId[] = ['john', 'susie', 'paul', 'cctv'];
 const RING_C = 2 * Math.PI * 30;
@@ -39,6 +40,8 @@ export class Switcher {
   private readonly subEl: HTMLElement;
   private readonly rooms: Map<RoomId, RoomDef>;
   private readonly poller: ActionPoller;
+  /** the first-night walkthrough's line (above the key hints) */
+  private readonly tutEl: HTMLElement;
 
   private _open = false;
   private sel = 0;
@@ -105,6 +108,11 @@ export class Switcher {
     };
     body.append(planWrap, list);
     this.panel.appendChild(body);
+
+    this.tutEl = document.createElement('div');
+    this.tutEl.className = 'ns-switcher__tut';
+    this.tutEl.hidden = true;
+    this.panel.appendChild(this.tutEl);
 
     // footer hints
     const foot = document.createElement('footer');
@@ -219,6 +227,14 @@ export class Switcher {
   update(dt: number): void {
     this.lastUpdateAt = performance.now();
     this.step(dt);
+  }
+
+  /** The walkthrough's line inside the console and the card it points at (null clears both). */
+  setTutorialHint(text: string | null, target: ViewId | null): void {
+    if (text) renderRich(this.tutEl, text);
+    else this.tutEl.textContent = '';
+    this.tutEl.hidden = !text;
+    for (const v of ORDER) this.cards[v].root.classList.toggle('is-tut-target', v === target);
   }
 
   warn(id: CharacterId, level: number, hint?: string): void {

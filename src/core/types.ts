@@ -367,6 +367,8 @@ export interface Settings {
   invertY: boolean;
   difficulty: Difficulty;
   quality: 'auto' | 'low' | 'medium' | 'high';
+  /** first-night walkthrough + first-time tips; switches itself off once the walkthrough is finished or skipped */
+  tutorial: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -381,6 +383,7 @@ export const DEFAULT_SETTINGS: Settings = {
   invertY: false,
   difficulty: 'normal',
   quality: 'auto',
+  tutorial: true,
 };
 
 export interface GameState {

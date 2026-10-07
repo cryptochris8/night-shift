@@ -516,6 +516,14 @@ export interface IUIManager extends System {
   readonly modalOpen: boolean;
   /** Set the objective hint (subtle, bottom-left). */
   setObjective(text: string | null): void;
+  /** Control has just reached John: run the first-night walkthrough if the Tutorial setting is on. */
+  startTutorial(): void;
+  /** End the walkthrough (and this night's tips) and switch the setting off. */
+  skipTutorial(): void;
+  /** The walkthrough is on screen (the pause menu offers to skip it). */
+  readonly tutorialActive: boolean;
+  /** Game minute the clock may not run past while the walkthrough still needs John (null: no hold). */
+  readonly tutorialClockCap: number | null;
 }
 
 // ---------------------------------------------------------------------------

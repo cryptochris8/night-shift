@@ -89,6 +89,8 @@ await page.evaluate(() => {
   };
 });
 await page.mouse.click(5, 5);
+// QA runs skip the first-night walkthrough (it holds the clock at 22:59 until John has learned the controls)
+await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false }));
 await page.evaluate((seed) => window.__NS.newGame(seed), SEED);
 await page.waitForFunction(() => window.__NS.state().screen === 'intro', null, { timeout: 30000 });
 await sleep(1500);

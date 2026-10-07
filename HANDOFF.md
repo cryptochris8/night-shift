@@ -7,6 +7,8 @@ The build is complete and playable end to end. This note is for whoever picks it
 - All modules implemented and integrated; `npm run typecheck` clean, `npm test` 240 passing, `npm run build` OK (≈1.4 MB JS, ≈410 KB gzipped).
 - Verified headless (Chromium + SwiftShader): full smoke run title → ending with 0 console errors; several full nights at 60× on different seeds/scenarios with 0 errors; an attentive-player run reaches "Morning Comes", inattentive runs reach "Someone Missing"; "Rational Explanation" and "Something Came Through" are covered by unit tests of the ending rules.
 - Restart flow, phone layout (touch controls, stacked switcher), modal keyboard input, and audio levels per sound state all checked by the tools in `tools/`.
+- First-night walkthrough (added after the first live playtest, where the opening felt unclear): look/walk → vending machine (E) → perspective console (Tab) → Susie → back to John → closing card, then once-per-night tips. Pure logic in `src/ui/tutorial.flow.ts` (unit-tested), card in `src/ui/tutorial.ts`; `node tools/tutorial.mjs` plays it with real input. Changed objectives now light up for a few seconds in the HUD.
+- Code lives at https://github.com/cryptochris8/night-shift (public, branch `main`); keep local machine paths out of committed files.
 
 ## Not verified (needs a human)
 

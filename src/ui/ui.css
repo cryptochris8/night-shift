@@ -135,6 +135,18 @@
 }
 .ns-objective:empty { display: none; }
 .ns-objective.is-swapping { opacity: 0; }
+/* a changed objective: bright for a few seconds, labelled, and exempt from the idle fade */
+.ns-objective { transition: opacity 0.45s ease, color 1.4s ease, border-color 1.4s ease; }
+.ns-objective.is-new { color: rgba(236, 240, 234, 0.95); border-left-color: var(--ns-phos); text-shadow: 0 1px 2px #000; }
+.ns-objective.is-new::before {
+  content: attr(data-label);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  color: var(--ns-phos);
+}
+.ns-hud.is-idle .ns-hud__bl.is-pinned { opacity: 1; }
 
 .ns-hud__bc { position: absolute; left: 50%; bottom: 16vh; transform: translateX(-50%); }
 .ns-prompt {

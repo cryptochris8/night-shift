@@ -8,6 +8,7 @@ _Claude Code reads this file automatically._
 - Stack: **Vite 7 + TypeScript 5 (strict) + three r186**, vanilla DOM UI (no React).
 - Architecture + module ownership + story spine: `CONTRACT.md` (authoritative). Modules talk through `src/core/contracts.ts` interfaces and the `EventBus` in `src/core/state.ts`.
 - Commands: `npm run dev` · `npm run build` · `npm test` (Vitest, pure logic) · `npm run typecheck`.
-- QA tools (headless Chromium + SwiftShader, `vite.qa.config.ts` = no HMR): `node tools/smoke.mjs` (title→ending screenshots), `node tools/night.mjs` (full night at 60× with switching), `node tools/shots.mjs` (fixed camera poses), `node tools/probe.mjs "<js>" --play`, `node tools/audiolevel.mjs`.
+- QA tools (headless Chromium + SwiftShader, `vite.qa.config.ts` = no HMR): `node tools/smoke.mjs` (title→ending screenshots), `node tools/night.mjs` (full night at 60× with switching), `node tools/shots.mjs` (fixed camera poses), `node tools/probe.mjs "<js>" --play`, `node tools/audiolevel.mjs`, `node tools/tutorial.mjs` (first-night walkthrough).
+- First-night walkthrough: `src/ui/tutorial.ts` + pure `tutorial.flow.ts` (unit-tested). On while `settings.tutorial` (default true; switches itself off when finished/skipped). It holds the clock at 22:59 while John is still learning the controls, so QA tools set `tutorial: false` before `newGame`.
 - Debug: `window.__NS` (`setTime`, `switchView`, `fire`, `state`), `#debug=1` overlay, `#seed=NS-XXX-XXX`.
 - Gotcha (three r186): shadow-casting lights must render their shadow map once at startup (`shadow.needsUpdate = true`) or every shadow-receiving draw fails with a sampler-type mismatch; and use `PCFShadowMap` (PCFSoft was removed).

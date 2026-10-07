@@ -38,19 +38,21 @@ Requires a modern desktop browser with WebGL 2 (Chrome, Edge, Firefox). Headphon
 
 Touch devices get an on-screen stick and buttons.
 
+**First night:** a short walkthrough teaches the controls as you play. You look around, walk, buy something from the vending machine, then switch into Susie and back. A few tips follow later in the night (the first time you take Paul or the cameras, and the first time someone else is in trouble). It turns itself off once finished. Pause → Skip tutorial skips it, and Settings → Tutorial brings it back.
+
 ## Night Seed
 
 Every shift is generated from a **Night Seed** (shown on the title and ending screens, e.g. `NS-7F3A-21`). The seed decides which anomalies happen, where the clues are, how each character perceives shared events, and what the hospital is actually hiding that night. Enter a seed on the title screen to replay a specific night. The game never tells you which kind of night you got.
 
 ## Settings
 
-Master / music / effects volume, motion effects, film grain, reduced flicker, subtitles, mouse sensitivity, invert Y, quality, and **Difficulty** (Easy / Normal / Hard — scales how fast characters get into trouble while you are not watching them).
+Master / music / effects volume, motion effects, film grain, reduced flicker, subtitles, mouse sensitivity, invert Y, quality, **Tutorial** (the first-night walkthrough), and **Difficulty** (Easy / Normal / Hard — scales how fast characters get into trouble while you are not watching them).
 
 ## Development
 
 ```bash
 npm run typecheck  # tsc --noEmit (strict)
-npm test           # Vitest: rng, clock, state, layout invariants, nav, collision, visibility, endings, UI input
+npm test           # Vitest: rng, clock, state, layout invariants, nav, collision, visibility, endings, UI input, tutorial
 npm run build      # typecheck + production bundle in dist/
 ```
 
@@ -64,6 +66,7 @@ Headless QA tools (Playwright Chromium with software WebGL; each starts its own 
 | `node tools/mobile.mjs` | Restart flow and phone layout with touch emulation |
 | `node tools/audiolevel.mjs` | Synthesized output level per sound state (silence / clipping) |
 | `node tools/doctest.mjs` | Documents and choices respond to the keyboard |
+| `node tools/tutorial.mjs` | Plays the first-night walkthrough with real key presses: every step, the console hint, the tips, the 22:59 clock hold, Skip from the pause menu, the setting switching itself off, phone layouts |
 | `node tools/probe.mjs "<js>" --play` | Evaluate an expression inside a running game (`s` = services) |
 
 Architecture: `src/core` (types, contracts, store/bus, clock, seeded RNG, input) · `src/world` (floor plan, procedural geometry, props, room visibility) · `src/render` (textures, lighting, post-processing, cinematics) · `src/characters` (first-person controller, procedural figures, navigation) · `src/audio` (synthesized ambience and effects) · `src/cctv` · `src/interact` · `src/ui` · `src/events` + `src/story` (the director: shared timeline, anomalies, perception, choices, endings). `CONTRACT.md` documents the module boundaries and the story spine.
