@@ -6,8 +6,8 @@ import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);
 const PORT = Number(args.includes('--port') ? args[args.indexOf('--port') + 1] : '5178');
-const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
-process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
+const server = spawn(process.execPath, [resolve('node_modules/vite/bin/vite.js'), '--config', 'vite.qa.config.ts', '--port', String(PORT), '--host', '127.0.0.1', '--strictPort'], { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'] });
+process.on('exit', () => { try { server?.kill(); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -88,5 +88,4 @@ for (const [label, t, view] of states) {
   console.log(`[audio] ${label.padEnd(22)} (${st.padEnd(20)})`, fmt(await page.evaluate(() => window.__level(4000))));
 }
 await browser.close();
-server.kill();
 process.exit(0);

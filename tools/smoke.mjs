@@ -30,15 +30,11 @@ const consoleWarnings = [];
 
 let server = null;
 if (!args.includes('--url')) {
-  server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, {
-    cwd: resolve('.'),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    shell: true,
-  });
+  server = spawn(process.execPath, [resolve('node_modules/vite/bin/vite.js'), '--config', 'vite.qa.config.ts', '--port', String(PORT), '--host', '127.0.0.1', '--strictPort'], { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'] });
   server.stdout.on('data', (d) => process.env.SMOKE_VERBOSE && process.stdout.write(d));
   server.stderr.on('data', (d) => process.stdout.write(String(d)));
   await waitForServer(URL, 60000);
-  process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
+  process.on('exit', () => { try { server?.kill(); } catch { /* already gone */ } });
 }
 
 async function waitForServer(url, timeout) {
@@ -216,6 +212,5 @@ const report = {
 };
 writeFileSync(resolve(SHOTS, 'report.json'), JSON.stringify(report, null, 2));
 await browser.close();
-if (server) server.kill();
 log('done.', failures.length ? `${failures.length} FAILURES` : 'OK', `${report.consoleErrors.length} distinct console errors`);
 process.exit(failures.length || report.consoleErrors.length ? 1 : 0);

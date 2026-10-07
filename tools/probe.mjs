@@ -11,8 +11,8 @@ const arg = (k, d) => {
 };
 const PORT = Number(arg('--port', '5176'));
 const EXPR = args[0];
-const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
-process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
+const server = spawn(process.execPath, [resolve('node_modules/vite/bin/vite.js'), '--config', 'vite.qa.config.ts', '--port', String(PORT), '--host', '127.0.0.1', '--strictPort'], { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'] });
+process.on('exit', () => { try { server?.kill(); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -42,5 +42,4 @@ if (args.includes('--play')) {
 const out = await page.evaluate(`(() => { const s = window.__NS.services; return (${EXPR}); })()`);
 console.log(typeof out === 'string' ? out : JSON.stringify(out, null, 1));
 await browser.close();
-server.kill();
 process.exit(0);

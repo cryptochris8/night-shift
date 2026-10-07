@@ -88,6 +88,7 @@ export class InputManager {
   enabled = true;
   private element: HTMLElement;
   private wantLock = false;
+  private rawUnsupported = false;
   gamepadConnected = false;
   lastDeviceWasGamepad = false;
   /** when pointer lock is unavailable (iframe/mobile), mouse drag can still look */
@@ -127,8 +128,22 @@ export class InputManager {
     this.wantLock = true;
     if (document.pointerLockElement === this.element) return;
     try {
+      if (this.rawUnsupported) {
+        this.element.requestPointerLock();
+        return;
+      }
       const p = (this.element as any).requestPointerLock?.({ unadjustedMovement: true });
-      if (p && typeof p.catch === 'function') p.catch(() => this.element.requestPointerLock());
+      if (p && typeof p.catch === 'function') {
+        p.catch((err: unknown) => {
+          // raw (unaccelerated) input is unavailable on some systems: use plain lock from now on
+          if (err instanceof DOMException && err.name === 'NotSupportedError') this.rawUnsupported = true;
+          try {
+            this.element.requestPointerLock();
+          } catch {
+            /* refused: the next click retries */
+          }
+        });
+      }
     } catch {
       try {
         this.element.requestPointerLock();
@@ -265,7 +280,9 @@ export class InputManager {
   };
 
   private onMouseMove = (e: MouseEvent): void => {
-    if (!this.pointerLocked && !this.allowUnlockedLook) return;
+    // Locked: every movement looks. Unlocked (the browser refused or dropped the lock): look only while
+    // dragging with the primary button, so the camera never stops responding entirely.
+    if (!this.pointerLocked && !(this.allowUnlockedLook && (e.buttons & 1) === 1)) return;
     this.lastDeviceWasGamepad = false;
     this.look.dx += e.movementX;
     this.look.dy += e.movementY;

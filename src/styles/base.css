@@ -116,3 +116,24 @@ html, body {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 1; }
 }
+
+/* "Click to look around": shown while playing without pointer lock (main.ts) */
+.ns-lookhint {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 7px 14px;
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ns-ink);
+  background: rgba(5, 7, 8, 0.62);
+  border: 1px solid rgba(185, 240, 201, 0.25);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease 0.5s;
+}
+.ns-lookhint.is-on { opacity: 1; }

@@ -52,7 +52,7 @@ if (POSE_ARG) {
   POSES.push([n, v, Number(x), Number(z), { x: Number(lx), y: Number(ly), z: Number(lz) }]);
 }
 
-const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+const server = spawn(process.execPath, [resolve('node_modules/vite/bin/vite.js'), '--config', 'vite.qa.config.ts', '--port', String(PORT), '--host', '127.0.0.1', '--strictPort'], { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'] });
 server.stderr.on('data', (d) => process.stdout.write(String(d)));
 const start = Date.now();
 while (Date.now() - start < 60000) {
@@ -121,7 +121,7 @@ for (const [name, view, x, z, look] of POSES) {
   const AFTER = arg('--after', '');
   if (AFTER) await page.evaluate(`(() => { const s = window.__NS.services; return (${AFTER}); })()`);
   await sleep(Number(arg('--wait', '1400')));
-  process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
+  process.on('exit', () => { try { server?.kill(); } catch { /* already gone */ } });
 const t0 = Date.now();
   await page.screenshot({ path: resolve(OUT, `${name}.png`) });
   const fps = await page.evaluate(() => new Promise((res) => {
@@ -145,5 +145,4 @@ writeFileSync(resolve(OUT, 'report.json'), JSON.stringify({ errors: [...new Set(
 console.log('[shots] renderer', JSON.stringify(info), 'errors', errors.length);
 for (const e of [...new Set(errors)].slice(0, 15)) console.log('  ', e);
 await browser.close();
-server.kill();
 process.exit(0);

@@ -65,6 +65,9 @@ class Game implements IGameController {
   private readonly openings = buildOpenings(LAYOUT.rooms, LAYOUT.doors);
   private readonly camWorld = new THREE.Vector3();
   private readonly doorSeenOpen = new Map<string, number>();
+  private lookHint: HTMLDivElement | null = null;
+  private autoPausedAt = -Infinity;
+  private modalOpenPrev = false;
   private debugAccum = 0;
 
   constructor() {
@@ -158,6 +161,17 @@ class Game implements IGameController {
     window.addEventListener('resize', () => this.resize());
     this.resize();
 
+    // Mouse look needs pointer lock, which browsers grant only inside a click or key handler.
+    // Clicking the view takes it; losing it mid-play (Esc, alt-tab) pauses, the way Esc should;
+    // and dragging with the button held still looks around if the browser refuses the lock.
+    s.input.allowUnlockedLook = true;
+    window.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    this.lookHint = document.createElement('div');
+    this.lookHint.className = 'ns-lookhint';
+    this.lookHint.textContent = 'Click to look around';
+    document.getElementById('app')?.appendChild(this.lookHint);
+
     const hash = readHash();
     // Title screen (skipped when restarting a night: a plain prompt waits for the audio gesture instead)
     if (!hash.auto) s.store.setScreen('title');
@@ -187,6 +201,31 @@ class Game implements IGameController {
       window.addEventListener('keydown', start);
     }
   }
+
+  /** True while the player should be steering a first-person camera with the mouse. */
+  private lookable(): boolean {
+    const s = this.services;
+    const st = s.store.get();
+    return st.screen === 'playing' && !st.paused && !s.ui.modalOpen && !s.cinematic.playing && !s.input.isTouch && st.activeView !== 'cctv';
+  }
+
+  private onMouseDown = (e: MouseEvent): void => {
+    const s = this.services;
+    if (e.button !== 0 || s.input.pointerLocked || !this.lookable()) return;
+    const target = e.target as Element | null;
+    if (target?.closest?.('button, a, input, select, textarea, label, [role="button"], .ns-switcher, .ns-doclayer, .ns-dialogue')) return;
+    s.input.requestLock();
+  };
+
+  private onPointerLockChange = (): void => {
+    const s = this.services;
+    // Only an unexpected loss pauses: our own releases (documents, switcher, menus) clear wantsLock first,
+    // and their unlock event can arrive a frame or two later, after the modal has already closed.
+    if (s.input.pointerLocked || !s.input.wantsLock || this.switching || s.store.get().inputLocked || !this.lookable()) return;
+    // the lock was taken away mid-play (Esc never reaches the page while locked, or the window lost focus)
+    this.autoPausedAt = performance.now();
+    this.pause();
+  };
 
   private onSettings(settings: Settings): void {
     const s = this.services;
@@ -403,12 +442,16 @@ class Game implements IGameController {
     const st = s.store.get();
     const playing = st.screen === 'playing' && !st.paused;
 
-    // Global hotkeys
-    if (s.input.pressed('pause')) {
-      if (st.screen === 'playing' && !s.ui.modalOpen && !s.cinematic.playing) this.pause();
+    // Global hotkeys.
+    // A modal that is open, or closed during this frame or the last, keeps its closing key to itself:
+    // otherwise the E that puts a chart down re-opens the phone and the Esc that closes it also pauses.
+    const modalGuard = s.ui.modalOpen || this.modalOpenPrev;
+    // ignore an Esc that arrives right after the lock loss already paused (would instantly resume)
+    if (s.input.pressed('pause') && performance.now() - this.autoPausedAt > 400) {
+      if (st.screen === 'playing' && !modalGuard && !s.cinematic.playing) this.pause();
       else if (st.screen === 'paused') this.resume();
     }
-    if (playing && !st.inputLocked && !s.ui.modalOpen) {
+    if (playing && !st.inputLocked && !modalGuard) {
       if (s.input.pressed('switcher')) {
         if (s.ui.switcherOpen) s.ui.closeSwitcher();
         else s.ui.openSwitcher();
@@ -488,6 +531,8 @@ class Game implements IGameController {
       }
     }
 
+    this.modalOpenPrev = s.ui.modalOpen;
+    if (this.lookHint) this.lookHint.classList.toggle('is-on', this.lookable() && !s.input.pointerLocked && !s.store.get().inputLocked);
     if (this.debugEl) this.updateDebugOverlay(dt);
     s.input.endFrame();
   };

@@ -128,7 +128,7 @@ export class AmbienceMixer {
 
   private panner(pos: Vec3): PannerNode {
     const p = new PannerNode(this.ctx, {
-      panningModel: 'HRTF',
+      panningModel: 'equalpower', // ambience beds do not need HRTF, and it is costly
       distanceModel: 'inverse',
       refDistance: 1.5,
       maxDistance: 80,

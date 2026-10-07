@@ -347,7 +347,7 @@ export class AudioEngine implements IAudioEngine {
     for (const cls of REVERB_CLASSES) {
       const conv = new ConvolverNode(ctx, { buffer: makeImpulseResponse(ctx, cls, irRng), disableNormalization: false });
       const gain = new GainNode(ctx, { gain: 0 });
-      reverbIn.connect(conv);
+      // fed on demand by applyRoom: four always-on convolvers overloaded busy machines
       conv.connect(gain);
       gain.connect(percIn);
       reverbs[cls] = { conv, gain };
@@ -430,7 +430,8 @@ export class AudioEngine implements IAudioEngine {
       occl = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: o.lp, Q: 0.5 });
       occlGain = new GainNode(ctx, { gain: o.gain });
       panner = new PannerNode(ctx, {
-        panningModel: this.settings?.quality === 'low' ? 'equalpower' : 'HRTF',
+        // HRTF is the most expensive node in Web Audio; with many voices it starved the audio thread
+        panningModel: this.settings?.quality === 'high' ? 'HRTF' : 'equalpower',
         distanceModel: 'inverse',
         refDistance: 1.5,
         maxDistance: 80,
@@ -588,12 +589,51 @@ export class AudioEngine implements IAudioEngine {
     if (!g || !this.ctx) return;
     const { cls } = reverbClassFor(room);
     const now = this.ctx.currentTime;
+    this.activeReverb = cls;
     for (const c of REVERB_CLASSES) {
       const target = c === cls ? 1 : 0;
       if (immediate) g.reverbs[c].gain.gain.setValueAtTime(target, now);
       else g.reverbs[c].gain.gain.setTargetAtTime(target, now, 0.35);
+      if (c === cls) this.feedReverb(c);
+      else this.starveReverb(c, immediate);
     }
     this.ambience?.setRoom(room);
+  }
+
+  private activeReverb: ReverbClass | null = null;
+  private readonly reverbFeeds = new Set<ReverbClass>();
+  private readonly reverbDrops = new Map<ReverbClass, number>();
+
+  private feedReverb(cls: ReverbClass): void {
+    const g = this.g;
+    if (!g) return;
+    const pending = this.reverbDrops.get(cls);
+    if (pending !== undefined) {
+      window.clearTimeout(pending);
+      this.reverbDrops.delete(cls);
+    }
+    if (!this.reverbFeeds.has(cls)) {
+      g.reverbIn.connect(g.reverbs[cls].conv);
+      this.reverbFeeds.add(cls);
+    }
+  }
+
+  /** Stop feeding a reverb once the crossfade and its tail are done; an idle convolver costs nothing. */
+  private starveReverb(cls: ReverbClass, immediate: boolean): void {
+    if (!this.reverbFeeds.has(cls) || this.reverbDrops.has(cls)) return;
+    const drop = (): void => {
+      this.reverbDrops.delete(cls);
+      const g = this.g;
+      if (!g || cls === this.activeReverb || !this.reverbFeeds.has(cls)) return;
+      try {
+        g.reverbIn.disconnect(g.reverbs[cls].conv);
+      } catch {
+        /* already disconnected */
+      }
+      this.reverbFeeds.delete(cls);
+    };
+    if (immediate) drop();
+    else this.reverbDrops.set(cls, window.setTimeout(drop, 4000));
   }
 
   setCCTVMode(on: boolean): void {
@@ -735,21 +775,18 @@ export class AudioEngine implements IAudioEngine {
       timer = window.setTimeout(() => finish(true), 1500 + text.length * 95);
       try {
         ss.cancel();
+        ss.resume(); // a synthesizer left paused (tab switch, earlier pause) would otherwise queue silently
         ss.speak(u);
       } catch {
         finish(false);
         return;
       }
       if (glitch) {
+        // static bursts over the voice; never pause()/resume() the synthesizer, Chrome can stay stuck paused
         const stutters = 1 + this.rng.int(0, 1);
         for (let i = 0; i < stutters; i++) {
           window.setTimeout(() => {
-            if (done) return;
-            try {
-              ss.pause();
-              this.play('intercom_static', { nonSpatial: true, volume: 0.35 });
-              window.setTimeout(() => { try { ss.resume(); } catch { /* ignore */ } }, 120 + this.rng.int(0, 160));
-            } catch { /* ignore */ }
+            if (!done) this.play('intercom_static', { nonSpatial: true, volume: 0.35 });
           }, 500 + i * 900 + this.rng.int(0, 600));
         }
       }
