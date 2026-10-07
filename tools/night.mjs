@@ -3,7 +3,7 @@
 // Plays the whole shift without setTime jumps (default 60 game-s per real second → ~3 min),
 // cycling perspectives, auto-answering dialogue choices and closing documents. Logs every
 // phase / power / sound / view change, each fired event, subtitles and errors; ends at the ending screen.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -18,10 +18,13 @@ const SCALE = Number(arg('--scale', '60'));
 const SEED = arg('--seed', 'NS-NGT-001');
 const SHOTS = args.includes('--shots');
 const SWITCH = !args.includes('--no-switch');
+// --smart: behave like an attentive player — go to whoever is in danger, otherwise cycle slowly
+const SMART = args.includes('--smart');
 const OUT = resolve('tools/shots/night');
 mkdirSync(OUT, { recursive: true });
 
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -145,6 +148,19 @@ while (Date.now() - start < 30 * 60 * 1000) {
       await sleep(200);
     }
   }
+  if (SMART && st.screen === 'playing' && !st.modal) {
+    const worst = await page.evaluate(() => {
+      const s = window.__NS.state();
+      const c = Object.values(s.characters).filter((x) => !x.missing).sort((a, b) => b.danger - a.danger)[0];
+      return c && c.danger > 0.12 && s.activeView !== c.id ? c.id : null;
+    });
+    if (worst) {
+      await page.evaluate((v) => window.__NS.switchView(v), worst).catch(() => {});
+      lastSwitch = Date.now();
+      console.log(`  .. t=${st.time.toFixed(1)} SMART -> ${worst}  danger: ${st.dangers}`);
+      continue;
+    }
+  }
   if (SWITCH && Date.now() - lastSwitch > 9000 && st.screen === 'playing' && !st.modal) {
     vi = (vi + 1) % views.length;
     await page.evaluate((v) => window.__NS.switchView(v), views[vi]).catch(() => {});
@@ -169,5 +185,4 @@ for (const [w, n] of [...warnings].slice(0, 15)) console.log(`   (${n}x) ${w}`);
 writeFileSync(resolve(OUT, 'night.json'), JSON.stringify({ seed: SEED, scenario, final, errors, warnings: [...warnings] }, null, 2));
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(errors.length ? 1 : 0);

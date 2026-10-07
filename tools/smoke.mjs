@@ -6,7 +6,7 @@
 //   node tools/smoke.mjs            (default: dev server on 5174, shots in tools/shots)
 //   node tools/smoke.mjs --fast     (skip the long waits)
 //   node tools/smoke.mjs --url http://127.0.0.1:4173   (use an already-running server)
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -38,6 +38,7 @@ if (!args.includes('--url')) {
   server.stdout.on('data', (d) => process.env.SMOKE_VERBOSE && process.stdout.write(d));
   server.stderr.on('data', (d) => process.stdout.write(String(d)));
   await waitForServer(URL, 60000);
+  process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 }
 
 async function waitForServer(url, timeout) {

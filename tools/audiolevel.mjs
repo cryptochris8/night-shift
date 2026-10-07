@@ -1,12 +1,13 @@
 // NIGHT SHIFT — measure the synthesized audio output level per sound state (catches silence / clipping).
 //   node tools/audiolevel.mjs [--port 5178]
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);
 const PORT = Number(args.includes('--port') ? args[args.indexOf('--port') + 1] : '5178');
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -88,5 +89,4 @@ for (const [label, t, view] of states) {
 }
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(0);

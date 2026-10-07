@@ -110,6 +110,8 @@ export class DangerSystem {
     const st = s.store.get();
     const resolution = time >= PHASE_STARTS.resolution;
     const diff = DANGER_SCALE[st.settings.difficulty] ?? 1;
+    // Easy warns earlier (more warning before anyone is lost); Hard warns later and skips the heads-up.
+    const T = st.settings.difficulty === 'easy' ? [0.12, 0.34, 0.64] : st.settings.difficulty === 'hard' ? [0.3, 0.56, 0.82] : [0.18, 0.42, 0.72];
     let maxOther = 0;
 
     for (const id of CHARACTER_IDS) {
@@ -125,7 +127,7 @@ export class DangerSystem {
       if (!controlled) maxOther = Math.max(maxOther, d);
 
       // staged signals on the way up; reset once calm again
-      const stage = d >= 0.72 ? 3 : d >= 0.42 ? 2 : d >= 0.18 ? 1 : 0;
+      const stage = d >= T[2] ? 3 : d >= T[1] ? 2 : d >= T[0] ? 1 : 0;
       if (w && stage > this.stage[id]) {
         this.stage[id] = stage;
         this.hooks.onStage(w, stage as 1 | 2 | 3);
@@ -137,7 +139,7 @@ export class DangerSystem {
         continue;
       }
       // two minutes of warning before a window opens
-      if (!w && !resolution && !this.preWarned[id]) {
+      if (!w && !resolution && !this.preWarned[id] && st.settings.difficulty !== 'hard') {
         const next = this.windows.find((x) => x.id === id && time >= x.start - 2 && time < x.start && x.active());
         if (next) {
           this.preWarned[id] = true;

@@ -2,7 +2,7 @@
 //   node tools/shots.mjs [--port 5175] [--out tools/shots/qa] [--time 10] [--power normal|generator] [--css "..."] [--only name,name]
 // Starts its own Vite dev server, starts a run, skips the intro, then for each pose teleports the
 // active character, aims the camera and screenshots. Poses are [name, view, x, z, yaw?, lookAt?].
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -121,7 +121,8 @@ for (const [name, view, x, z, look] of POSES) {
   const AFTER = arg('--after', '');
   if (AFTER) await page.evaluate(`(() => { const s = window.__NS.services; return (${AFTER}); })()`);
   await sleep(Number(arg('--wait', '1400')));
-  const t0 = Date.now();
+  process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
+const t0 = Date.now();
   await page.screenshot({ path: resolve(OUT, `${name}.png`) });
   const fps = await page.evaluate(() => new Promise((res) => {
     let n = 0;
@@ -145,5 +146,4 @@ console.log('[shots] renderer', JSON.stringify(info), 'errors', errors.length);
 for (const e of [...new Set(errors)].slice(0, 15)) console.log('  ', e);
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(0);

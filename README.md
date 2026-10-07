@@ -49,11 +49,23 @@ Master / music / effects volume, motion effects, film grain, reduced flicker, su
 ## Development
 
 ```bash
-npm run typecheck  # tsc --noEmit
-npm test           # vitest (pure logic: rng, clock, state, layout, nav, collision)
-npm run smoke      # headless Chromium run through title → play → outage → ending, screenshots in tools/shots
+npm run typecheck  # tsc --noEmit (strict)
+npm test           # Vitest: rng, clock, state, layout invariants, nav, collision, visibility, endings, UI input
+npm run build      # typecheck + production bundle in dist/
 ```
 
-Architecture: `src/core` (types, contracts, store/bus, clock, seeded RNG, input) · `src/world` (floor plan, procedural geometry and props) · `src/render` (textures, lighting, post-processing, cinematics) · `src/characters` (first-person controller, procedural figures, navigation) · `src/audio` (synthesised ambience and effects) · `src/cctv` · `src/interact` · `src/ui` · `src/events` + `src/story` (the director: shared timeline, anomalies, perception, choices, endings). `CONTRACT.md` documents the module boundaries and the story spine.
+Headless QA tools (Playwright Chromium with software WebGL; each starts its own no-HMR dev server from `vite.qa.config.ts`):
 
-Debug hooks are exposed on `window.__NS` (`setTime(minutes)`, `switchView(view)`, `fire(eventId)`, `state()`); add `#debug=1` to the URL for the overlay.
+| Command | What it checks |
+|---|---|
+| `node tools/smoke.mjs` | Title → intro → every perspective → outage → generator → crisis → ending, with screenshots in `tools/shots/` |
+| `node tools/night.mjs --scale 60` | A whole night at 60× speed with perspective switching and auto-answered choices; `--smart` follows danger warnings like an attentive player |
+| `node tools/shots.mjs` | Photographs fixed camera poses (`--power generator`, `--pose name,view,x,z,lx,ly,lz`) |
+| `node tools/mobile.mjs` | Restart flow and phone layout with touch emulation |
+| `node tools/audiolevel.mjs` | Synthesized output level per sound state (silence / clipping) |
+| `node tools/doctest.mjs` | Documents and choices respond to the keyboard |
+| `node tools/probe.mjs "<js>" --play` | Evaluate an expression inside a running game (`s` = services) |
+
+Architecture: `src/core` (types, contracts, store/bus, clock, seeded RNG, input) · `src/world` (floor plan, procedural geometry, props, room visibility) · `src/render` (textures, lighting, post-processing, cinematics) · `src/characters` (first-person controller, procedural figures, navigation) · `src/audio` (synthesized ambience and effects) · `src/cctv` · `src/interact` · `src/ui` · `src/events` + `src/story` (the director: shared timeline, anomalies, perception, choices, endings). `CONTRACT.md` documents the module boundaries and the story spine.
+
+Debug hooks live on `window.__NS` (`setTime(minutes)`, `switchView(view)`, `fire(eventId)`, `state()`); add `#debug=1` to the URL for an overlay with the timeline, danger levels and upcoming events, and `#seed=NS-XXX-XXX` to play a specific night.

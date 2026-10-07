@@ -1,9 +1,10 @@
 // Can a document / choice be closed with the keyboard? (regression for a stuck-modal bug)
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 const PORT = 5180;
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) { try { if ((await fetch(`http://127.0.0.1:${PORT}/`)).ok) break; } catch {} await new Promise((r) => setTimeout(r, 400)); }
 const browser = await chromium.launch({ channel: 'chromium', headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--mute-audio'] });
@@ -36,5 +37,4 @@ await sleep(800);
 console.log(`[doc] choice Digit2 -> ${await page.evaluate(() => window.__askResult)} open-after=${await modal()}`);
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(0);

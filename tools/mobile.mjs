@@ -1,6 +1,6 @@
 // NIGHT SHIFT — restart flow + phone layout check (touch emulation).
 //   node tools/mobile.mjs [--port 5179]
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium, devices } from 'playwright';
@@ -10,6 +10,7 @@ const PORT = Number(args.includes('--port') ? args[args.indexOf('--port') + 1] :
 const OUT = resolve('tools/shots/mobile');
 mkdirSync(OUT, { recursive: true });
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -73,5 +74,4 @@ const url = `http://127.0.0.1:${PORT}/`;
 console.log('[mobile] page errors:', errors.length, errors.slice(0, 5));
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(0);

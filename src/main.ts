@@ -10,6 +10,7 @@ import { RNG, makeSeedCode, normalizeSeedCode, scenarioForSeed } from './core/rn
 import { EventBus, Store, loadSettings, makeInitialState } from './core/state';
 import { phaseForTime, type EndingId, type Settings, type ViewId } from './core/types';
 import { LAYOUT } from './world/layout';
+import { buildOpenings, visibleRooms } from './world/visibility';
 import { WorldBuilder } from './world/WorldBuilder';
 import { LightingSystem } from './render/Lighting';
 import { PostFX } from './render/PostFX';
@@ -61,6 +62,9 @@ class Game implements IGameController {
   private screenshotMode = false;
   private switching = false;
   private debugEl: HTMLDivElement | null = null;
+  private readonly openings = buildOpenings(LAYOUT.rooms, LAYOUT.doors);
+  private readonly camWorld = new THREE.Vector3();
+  private readonly doorSeenOpen = new Map<string, number>();
   private debugAccum = 0;
 
   constructor() {
@@ -457,7 +461,10 @@ class Game implements IGameController {
     // Render
     const cam = s.cinematic.playing ? s.cinematic.camera : s.characters.camera;
     s.three.camera = cam;
-    if (!s.cinematic.playing && s.cctv.active && st.screen !== 'title') {
+    const cctvView = !s.cinematic.playing && s.cctv.active && st.screen !== 'title';
+    cam.getWorldPosition(this.camWorld); // the first-person camera is parented to its rig
+    this.cullRooms(s.cinematic.playing ? null : cctvView ? (s.cctv.currentCamera?.room ?? null) : s.world.roomAt({ x: this.camWorld.x, z: this.camWorld.z }));
+    if (cctvView) {
       s.cctv.renderFrame();
     } else {
       s.postfx.render(s.three.scene, cam);
@@ -484,6 +491,29 @@ class Game implements IGameController {
     if (this.debugEl) this.updateDebugOverlay(dt);
     s.input.endFrame();
   };
+
+  /**
+   * Room-level visibility: draw only rooms that can be seen from the camera's room (closed solid doors
+   * hide what is behind them). null (cinematics, camera inside a door gap) draws everything.
+   */
+  private cullRooms(room: import('./core/types').RoomId | null): void {
+    const s = this.services;
+    const now = performance.now();
+    // a door counts as see-through until well after it starts closing, so the room behind does not
+    // vanish while the leaf is still swinging shut
+    const seeThrough = (id: string): boolean => {
+      if (s.world.getDoor(id)?.open) {
+        this.doorSeenOpen.set(id, now);
+        return true;
+      }
+      return now - (this.doorSeenOpen.get(id) ?? -Infinity) < 2500;
+    };
+    const visible = room ? visibleRooms(room, this.openings, seeThrough) : null;
+    for (const r of LAYOUT.rooms) {
+      const g = s.world.roomGroup(r.id);
+      if (g) g.visible = visible ? visible.has(r.id) : true;
+    }
+  }
 
   private enableDebugOverlay(): void {
     const el = document.createElement('div');

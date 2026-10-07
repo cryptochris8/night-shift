@@ -1,6 +1,6 @@
 // NIGHT SHIFT — evaluate a JS expression inside a running game (debug helper).
 //   node tools/probe.mjs "<expression using s = window.__NS.services>"  [--port 5176] [--play]
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -12,6 +12,7 @@ const arg = (k, d) => {
 const PORT = Number(arg('--port', '5176'));
 const EXPR = args[0];
 const server = spawn(`npx vite --config vite.qa.config.ts --port ${PORT} --host 127.0.0.1 --strictPort`, { cwd: resolve('.'), stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+process.on('exit', () => { try { if (server) spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true }); } catch { /* already gone */ } });
 const t0 = Date.now();
 while (Date.now() - t0 < 60000) {
   try {
@@ -42,5 +43,4 @@ const out = await page.evaluate(`(() => { const s = window.__NS.services; return
 console.log(typeof out === 'string' ? out : JSON.stringify(out, null, 1));
 await browser.close();
 server.kill();
-spawn('taskkill', ['/F', '/T', '/PID', String(server.pid)], { shell: true });
 process.exit(0);
