@@ -1,0 +1,87 @@
+/* NIGHT SHIFT — base styles. UI module styles live in src/ui/ui.css (imported by UIManager). */
+:root {
+  --ns-bg: #050607;
+  --ns-ink: #d8dcd6;
+  --ns-ink-dim: #8e948f;
+  --ns-accent: #b9f0c9;      /* fluorescent green-white */
+  --ns-warn: #ff6a4a;        /* emergency red-orange */
+  --ns-amber: #ffb347;       /* generator / sodium */
+  --ns-cctv: #9fd3a6;
+  --ns-font-ui: 'Segoe UI', 'Helvetica Neue', Inter, Roboto, system-ui, sans-serif;
+  --ns-font-mono: 'Cascadia Mono', 'JetBrains Mono', Consolas, 'SF Mono', Menlo, monospace;
+  --ns-font-display: 'Bahnschrift', 'DIN Alternate', 'Franklin Gothic Medium', 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--ns-bg);
+  color: var(--ns-ink);
+  font-family: var(--ns-font-ui);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  background: var(--ns-bg);
+}
+
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  cursor: none;
+}
+
+#game.cursor { cursor: default; }
+
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* UI panels re-enable pointer events individually */
+  font-family: var(--ns-font-ui);
+}
+
+#ui > * { pointer-events: auto; }
+
+.boot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ns-bg);
+  z-index: 50;
+  transition: opacity 0.8s ease;
+}
+.boot.hidden { opacity: 0; pointer-events: none; }
+.boot__title {
+  font-family: var(--ns-font-display);
+  letter-spacing: 0.42em;
+  font-size: clamp(18px, 3vw, 28px);
+  color: #cfd6d0;
+  text-align: center;
+}
+.boot__sub {
+  margin-top: 12px;
+  text-align: center;
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--ns-ink-dim);
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot { transition: none; }
+}
