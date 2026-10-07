@@ -7,6 +7,7 @@ import type { Services } from '../core/contracts';
 import { formatClock12 } from '../core/clock';
 import { makeSeedCode } from '../core/rng';
 import type { Difficulty, Screen, Settings } from '../core/types';
+import { Briefing } from './briefing';
 
 export type MenuScreen = 'title' | 'paused' | 'settings' | 'controls' | 'credits';
 export type PadAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel';
@@ -38,6 +39,7 @@ const SETTINGS_ROWS: Row[] = [
   { key: 'musicVolume', label: 'Drone / music', kind: 'range', min: 0, max: 1, step: 0.05, format: pct },
   { key: 'sfxVolume', label: 'Effects', kind: 'range', min: 0, max: 1, step: 0.05, format: pct },
   { key: 'subtitles', label: 'Subtitles', kind: 'toggle', desc: 'Spoken lines as text. Non-speech captions always show.' },
+  { key: 'narration', label: 'Title narration', kind: 'toggle', desc: "Reads the briefing on the title screen aloud. Turns itself off once you've heard it through; Listen replays it any time." },
   {
     key: 'difficulty',
     label: 'Difficulty',
@@ -85,6 +87,7 @@ const CREDITS_LINES: [string, string][] = [
   ['A night at', 'St. Augustine Regional Medical Center — a place that does not exist.'],
   ['Everything you see', 'is drawn by code at runtime: three.js primitives, canvas textures, SVG and CSS. No imported models, images or fonts.'],
   ['Everything you hear', 'is synthesised with the Web Audio API. The intercom borrows your browser\'s speech voice.'],
+  ['Except one voice', 'The title briefing is read by an ElevenLabs narrator: the only recording in the game.'],
   ['Engine', 'three.js r186 · Vite 7 · TypeScript'],
   ['Night Seed', 'decides what the hospital is hiding. The game will not tell you which kind of night you had.'],
   ['Thank you', 'for working the shift. Headphones recommended.'],
@@ -102,6 +105,7 @@ export class Screens {
   private pauseClock!: HTMLElement;
   private pauseSeed!: HTMLElement;
   private titleClock!: HTMLElement;
+  private briefing!: Briefing;
   private focused: HTMLElement | null = null;
   private armed: { el: HTMLElement; label: string; t: number } | null = null;
   private clockAccum = 0;
@@ -190,6 +194,10 @@ export class Screens {
     this.seedInput = sec.querySelector('.ns-seed__input') as HTMLInputElement;
     this.resumeBtn = sec.querySelector('[data-act="resume"]') as HTMLElement;
     this.titleClock = sec.querySelector('.ns-title__time') as HTMLElement;
+    this.briefing = new Briefing(this.s, sec, sec.querySelector('.ns-menu') as HTMLElement, {
+      titleShowing: () => this.current === 'title' && !this.el.hidden,
+      gestured: () => this.unlockedOnce || pageActivated(),
+    });
     this.seedInput.addEventListener('focus', () => this.focus(this.seedInput, false));
     this.seedInput.addEventListener('input', () => {
       this.seedTouched = true;
@@ -317,6 +325,8 @@ export class Screens {
 
   hide(): void {
     if (this.current === null && this.el.hidden) return;
+    // leaving the menus for the night (new shift, resume): the briefing fades out under it
+    this.briefing.leave();
     this.current = null;
     this.el.hidden = true;
     this.disarm();
@@ -415,7 +425,10 @@ export class Screens {
 
   private items(): HTMLElement[] {
     if (!this.current) return [];
-    return Array.from(this.panels[this.current].querySelectorAll<HTMLElement>('.ns-item')).filter((el) => !el.hidden && !el.closest('[hidden]'));
+    // the briefing sheet (smaller screens) holds focus while it is open
+    const root = this.current === 'title' && this.briefing.sheetOpen ? this.briefing.panel : this.panels[this.current];
+    // getClientRects: also skip items a layout hides (the briefing has one form per screen size)
+    return Array.from(root.querySelectorAll<HTMLElement>('.ns-item')).filter((el) => !el.hidden && !el.closest('[hidden]') && el.getClientRects().length > 0);
   }
 
   private focus(item: HTMLElement | null, sound: boolean): void {
@@ -490,6 +503,18 @@ export class Screens {
         this.seedTouched = true;
         this.sfx('ui_hover');
         break;
+      case 'listen':
+        this.sfx('ui_select');
+        this.briefing.toggle();
+        break;
+      case 'brief':
+        this.sfx('ui_open');
+        this.briefing.openSheet();
+        this.focus(this.briefing.listenButton, false);
+        break;
+      case 'briefclose':
+        this.closeBriefing();
+        break;
       default:
         break;
     }
@@ -500,6 +525,12 @@ export class Screens {
     this.sfx('ui_select');
     const seed = this.seedValue;
     void this.s.game.newGame(seed || undefined);
+  }
+
+  private closeBriefing(): void {
+    this.sfx('ui_back');
+    this.briefing.closeSheet();
+    this.focus(this.briefing.opener, false);
   }
 
   private arm(item: HTMLElement): void {
@@ -536,6 +567,10 @@ export class Screens {
     const inSeed = document.activeElement === this.seedInput;
     if (e.code === 'Escape') {
       if (this.current === 'title') {
+        if (this.briefing.sheetOpen) {
+          this.closeBriefing();
+          return true;
+        }
         if (inSeed) {
           this.seedInput.blur();
           this.focus(this.items()[0] ?? null, false);
@@ -599,6 +634,7 @@ export class Screens {
         break;
       case 'cancel':
         if (this.current === 'paused') this.s.game.resume();
+        else if (this.current === 'title' && this.briefing.sheetOpen) this.closeBriefing();
         else if (this.current !== 'title') {
           this.sfx('ui_back');
           this.hooks.back();
@@ -608,6 +644,8 @@ export class Screens {
   }
 
   update(dt: number): void {
+    // every frame, menus up or not: the briefing tracks the voice while it fades out under the intro too
+    this.briefing.update(dt);
     if (!this.current) return;
     if (this.armed) {
       this.armed.t -= dt;
@@ -622,6 +660,13 @@ export class Screens {
   }
 
   dispose(): void {
+    this.briefing.dispose();
     this.el.remove();
   }
+}
+
+/** The page has had a click, tap or key press (sticky user activation), so it may play sound. */
+function pageActivated(): boolean {
+  const ua = (navigator as unknown as { userActivation?: { hasBeenActive?: boolean } }).userActivation;
+  return ua?.hasBeenActive === true;
 }

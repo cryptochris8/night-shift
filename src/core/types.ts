@@ -369,6 +369,8 @@ export interface Settings {
   quality: 'auto' | 'low' | 'medium' | 'high';
   /** first-night walkthrough + first-time tips; switches itself off once the walkthrough is finished or skipped */
   tutorial: boolean;
+  /** the title reads its briefing aloud by itself; switches itself off once heard to the end or stopped */
+  narration: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -384,6 +386,7 @@ export const DEFAULT_SETTINGS: Settings = {
   difficulty: 'normal',
   quality: 'auto',
   tutorial: true,
+  narration: true,
 };
 
 export interface GameState {

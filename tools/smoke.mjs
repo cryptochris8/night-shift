@@ -104,7 +104,7 @@ const waitFor = async (label, fn, timeout = 30000) => {
 
 try {
   log('open', URL);
-  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await waitFor('game ready', () => page.evaluate(() => Boolean(window.__NS?.ready)), 60000);
   await sleep(1500);
   await shot('01_title');
@@ -114,7 +114,8 @@ try {
   // user gesture for audio policy
   await page.mouse.click(640, 360);
   // QA runs skip the first-night walkthrough (it holds the clock at 22:59 until John has learned the controls)
-  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false }));
+  // and the title narration (it ducks the title audio while it reads)
+  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false, narration: false }));
   await page.evaluate((seed) => window.__NS.newGame(seed), SEED);
   await waitFor('intro started', async () => (await state())?.screen === 'intro', 20000);
   await sleep(2500);

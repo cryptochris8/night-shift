@@ -19,7 +19,8 @@ export interface EndingSummary {
 
 export type EndingResult = 'new_night' | 'title';
 
-const TITLES: Record<EndingId, { title: string; sub: string }> = {
+/** Exported for the title briefing's test: it names the endings the way this screen does. */
+export const ENDING_TITLES: Record<EndingId, { title: string; sub: string }> = {
   morning: { title: 'MORNING COMES', sub: 'Everyone accounted for. Nothing explained.' },
   missing: { title: 'SOMEONE MISSING', sub: 'The shift ended before the count was right.' },
   rational: { title: 'A RATIONAL EXPLANATION', sub: 'Almost everything fits.' },
@@ -109,7 +110,7 @@ export class EndingScreen {
     this.typing = null;
     this.typeQueue = [];
     this.rng = this.s.rng.fork('ui-ending');
-    const meta = TITLES[ending];
+    const meta = ENDING_TITLES[ending];
     this.el.hidden = false;
     this.el.className = `ns-ending ns-ending--${ending}`;
     this.titleEl.textContent = meta.title;

@@ -7,12 +7,14 @@
  *         voices → wet sends → 4 convolvers (generated IRs, crossfaded per room class) → perception filters
  * Positioned sounds use HRTF PannerNodes in world space; the listener follows `setListener`.
  * Every method is a safe no-op before `unlock()`; state set earlier is applied on unlock.
+ * The exception is the recorded title narration (narration.ts): a media element beside the graph.
  */
-import type { IAudioEngine, Services, SfxHandle, SfxName, SfxOptions } from '../core/contracts';
+import type { IAudioEngine, NarrationStatus, Services, SfxHandle, SfxName, SfxOptions } from '../core/contracts';
 import type { RNG } from '../core/rng';
 import type { CharacterId, PerceptionState, PowerState, RoomId, Settings, SoundState, Vec3 } from '../core/types';
 import { DOOR_BY_ID, roomAt } from '../world/layout';
 import { AmbienceMixer, type AmbienceHost } from './ambience';
+import { Narration } from './narration';
 import {
   EXTRA_SFX,
   SFX,
@@ -31,6 +33,9 @@ import {
 } from './synth';
 
 const MAX_VOICES = 24;
+/** menu-screen world level (the title backdrop), and under the title narration */
+const MENU_LEVEL = 0.35;
+const MENU_LEVEL_NARRATED = 0.14;
 const EYE = 1.65;
 const REVERB_CLASSES: ReverbClass[] = ['small_room', 'corridor', 'hall', 'outdoors'];
 
@@ -197,6 +202,7 @@ export class AudioEngine implements IAudioEngine {
 
   // intercom
   private speaking = 0;
+  private narration = new Narration();
   private voicesCache: SpeechSynthesisVoice[] = [];
 
   private roomAdj = new Map<RoomId, Map<RoomId, string[]>>();
@@ -232,6 +238,7 @@ export class AudioEngine implements IAudioEngine {
         this.ambience?.setTension(0);
         this.ambience?.setCCTV(false);
         for (const v of this.voices) v.stop(0.1);
+        this.narration.stop(0.6);
       }),
       bus.on('door:changed', ({ id, open }) => {
         if (id === 'd_elevator') this.ambience?.elevatorMoving(open);
@@ -373,6 +380,7 @@ export class AudioEngine implements IAudioEngine {
   }
 
   dispose(): void {
+    this.narration.dispose();
     for (const u of this.unsubs) u();
     this.unsubs = [];
     for (const v of this.voices) v.teardown();
@@ -650,7 +658,13 @@ export class AudioEngine implements IAudioEngine {
 
   applySettings(st: Settings): void {
     this.settings = st;
+    this.narration.setLevel(this.narrationLevel());
     this.applySettingsNow();
+  }
+
+  /** The narration plays outside the graph, so it follows the master curve directly. */
+  private narrationLevel(): number {
+    return Math.pow(clamp01(this.settings?.masterVolume ?? 0.8), 1.5);
   }
 
   private applySettingsNow(): void {
@@ -708,6 +722,19 @@ export class AudioEngine implements IAudioEngine {
   // ---------------------------------------------------------------------------
   // Intercom / voices
   // ---------------------------------------------------------------------------
+
+  narrate(url: string): void {
+    this.narration.setLevel(this.narrationLevel());
+    this.narration.play(url);
+  }
+
+  stopNarration(fadeSeconds = 0.5): void {
+    this.narration.stop(fadeSeconds);
+  }
+
+  narrationStatus(): NarrationStatus {
+    return this.narration.status();
+  }
 
   async intercom(text: string, opts?: { glitch?: boolean }): Promise<void> {
     if (!this.ctx || !this.g || !this._unlocked) return;
@@ -838,6 +865,7 @@ export class AudioEngine implements IAudioEngine {
 
   update(dt: number, _gdt: number): void {
     this.time += dt;
+    this.narration.update(dt);
     const ctx = this.ctx;
     const g = this.g;
     if (!ctx || !g || !this._unlocked) return;
@@ -863,7 +891,7 @@ export class AudioEngine implements IAudioEngine {
     // menus: pull the world back behind the UI
     const st = this.s.store.get();
     const inWorld = (st.screen === 'playing' && !st.paused) || st.screen === 'intro' || st.screen === 'ending';
-    g.menu.gain.setTargetAtTime(inWorld ? 1 : 0.35, now, 0.2);
+    g.menu.gain.setTargetAtTime(inWorld ? 1 : this.narration.active ? MENU_LEVEL_NARRATED : MENU_LEVEL, now, 0.2);
     g.menuLp.frequency.setTargetAtTime(inWorld ? 20000 : 1800, now, 0.2);
 
     // duck / silence release

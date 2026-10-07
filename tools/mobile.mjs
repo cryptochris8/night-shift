@@ -29,7 +29,7 @@ const url = `http://127.0.0.1:${PORT}/`;
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(`${url}#seed=NS-RST-777&auto=1`);
+  await page.goto(`${url}#seed=NS-RST-777&auto=1`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForFunction(() => window.__NS?.ready, null, { timeout: 60000 });
   await sleep(800);
   const prompt = await page.$('.ns-autostart');
@@ -48,13 +48,13 @@ const url = `http://127.0.0.1:${PORT}/`;
   const ctx = await browser.newContext({ ...devices['Pixel 7'] });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(url);
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForFunction(() => window.__NS?.ready, null, { timeout: 60000 });
   await sleep(1500);
   await page.screenshot({ path: resolve(OUT, 'title.png') });
   await page.tap('body');
   // QA runs skip the first-night walkthrough (it holds the clock at 22:59 until John has learned the controls)
-  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false }));
+  await page.evaluate(() => window.__NS.services.store.setSettings({ tutorial: false, narration: false }));
   await page.evaluate(() => window.__NS.newGame('NS-MOB-001'));
   await page.waitForFunction(() => window.__NS.state().screen === 'intro', null, { timeout: 30000 });
   await sleep(1200);

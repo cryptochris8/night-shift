@@ -116,7 +116,7 @@ async function openGame(contextOpts, seed, { clearSettings = true } = {}) {
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`console: ${m.text()}`);
   });
-  await page.goto(URL);
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForFunction(() => window.__NS?.ready, null, { timeout: 60000 });
   if (clearSettings) await page.evaluate(() => localStorage.removeItem('nightshift.settings.v1'));
   await page.mouse.click(5, 5); // the audio gesture

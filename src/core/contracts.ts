@@ -259,6 +259,17 @@ export interface SfxHandle {
   readonly playing: boolean;
 }
 
+/** 'stopped' is reported from the moment `stopNarration` is called, while the voice fades out. */
+export type NarrationState = 'idle' | 'loading' | 'playing' | 'ended' | 'stopped' | 'failed';
+
+export interface NarrationStatus {
+  state: NarrationState;
+  /** seconds into the recording */
+  time: number;
+  /** recording length in seconds (0 until the file's metadata is in) */
+  duration: number;
+}
+
 export interface IAudioEngine extends System {
   /** Create/resume the AudioContext. Must be called from a user gesture. */
   unlock(): Promise<void>;
@@ -277,6 +288,14 @@ export interface IAudioEngine extends System {
   applySettings(s: Settings): void;
   /** Spoken intercom page: uses SpeechSynthesis when available (filtered, robotic) or a synthesized murmur fallback. Resolves when done. */
   intercom(text: string, opts?: { glitch?: boolean }): Promise<void>;
+  /**
+   * Recorded narration (the title briefing, the one imported sound): plays `url` from the top through a
+   * media element, so it can start before `unlock()`; the world ducks under it while it plays.
+   */
+  narrate(url: string): void;
+  /** Fade the narration out (0 = cut). */
+  stopNarration(fadeSeconds?: number): void;
+  narrationStatus(): NarrationStatus;
   /** Speech-like murmur from a position (no words). */
   murmur(pos: Vec3, seconds: number, opts?: { pitch?: number; whisper?: boolean }): SfxHandle | null;
   /** Continuous heartbeat (bpm; 0 = off). */

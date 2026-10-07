@@ -2,7 +2,7 @@
   "name": "night-shift",
   "private": true,
   "version": "0.1.0",
-  "description": "NIGHT SHIFT — a browser-based psychological horror game set during one hospital night shift. Everything procedural; no imported assets.",
+  "description": "NIGHT SHIFT — a browser-based psychological horror game set during one hospital night shift. Everything procedural except one recorded voice (the title briefing).",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",

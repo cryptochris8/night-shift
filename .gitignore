@@ -8,3 +8,6 @@ build
 .DS_Store
 tools/shots
 test-results
+
+# ElevenLabs narration takes (tools/narration.mjs)
+tools/narration/cache
