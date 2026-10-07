@@ -72,6 +72,8 @@ const PAD_BUTTONS: Record<number, Action[]> = {
 export class InputManager {
   private held = new Set<Action>();
   private pressedThisFrame = new Set<Action>();
+  /** monotonically increasing press count per action: frame-rate independent edge detection for UI loops */
+  private presses = new Map<Action, number>();
   private releasedThisFrame = new Set<Action>();
   private keyHeld = new Set<string>();
   private padHeld = new Set<Action>();
@@ -158,6 +160,16 @@ export class InputManager {
     this.pollGamepad();
   }
 
+  /** Total presses of an action so far (compare two readings to detect presses between them). */
+  pressCount(action: Action): number {
+    return this.presses.get(action) ?? 0;
+  }
+
+  private press(action: Action): void {
+    this.pressedThisFrame.add(action);
+    this.presses.set(action, (this.presses.get(action) ?? 0) + 1);
+  }
+
   down(action: Action): boolean {
     return this.held.has(action) || this.padHeld.has(action);
   }
@@ -190,7 +202,7 @@ export class InputManager {
 
   /** Consume synthetic press (e.g. UI button mapped to an action). */
   inject(action: Action): void {
-    this.pressedThisFrame.add(action);
+    this.press(action);
   }
 
   /** Touch controls: virtual stick (-1..1) — persists until changed. */
@@ -208,7 +220,7 @@ export class InputManager {
   /** Touch controls: hold/release an action (e.g. run button). */
   setTouchHeld(action: Action, held: boolean): void {
     if (held) {
-      if (!this.held.has(action)) this.pressedThisFrame.add(action);
+      if (!this.held.has(action)) this.press(action);
       this.held.add(action);
     } else if (this.held.has(action)) {
       this.held.delete(action);
@@ -228,7 +240,7 @@ export class InputManager {
     this.keyHeld.add(e.code);
     for (const a of actions) {
       this.held.add(a);
-      this.pressedThisFrame.add(a);
+      this.press(a);
     }
   };
 
@@ -286,7 +298,7 @@ export class InputManager {
       this.lastDeviceWasGamepad = true;
       for (const a of actions) {
         this.padHeld.add(a);
-        if (!this.padPrev.has(a)) this.pressedThisFrame.add(a);
+        if (!this.padPrev.has(a)) this.press(a);
       }
     });
     for (const a of this.padPrev) {

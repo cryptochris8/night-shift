@@ -72,6 +72,11 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
   const controlled = (c: CharacterId): boolean => store.get().activeView === c;
   const view = (): ViewId => store.get().activeView;
   const real = (): boolean => REAL.includes(api.scenario);
+  // A scene's question or document only appears if the player is still looking through the character
+  // it belongs to; if they switched away mid-scene the moment passes and the default stands.
+  const askAs = (who: ViewId, ...a: Parameters<StoryApi['ask']>): Promise<string> =>
+    view() === who ? api.ask(...a) : Promise.resolve(a[2]?.defaultId ?? a[1][0]?.id ?? '');
+  const docAs = (who: ViewId, d: DocumentView): Promise<unknown> => (view() === who ? api.doc(d) : Promise.resolve(null));
   const sil = hooks.silhouette ?? new Silhouette(1.9);
   const MARCUS = 'Marcus';
   const RADIO = 'Marcus (radio)';
@@ -238,10 +243,10 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
             api.say(LINES.triage.seat, 2.6, 'Susie');
             await wait(3);
             s.audio.play('monitor_beep', { pos: v3(-7.4, 1.3, -4.6), volume: 0.4 });
-            await api.doc(vitalsDoc());
+            await docAs('john', vitalsDoc());
             api.say(LINES.triage.vitals, 3.4, 'Susie');
             await wait(3.6);
-            const answer = await api.ask(LINES.triage.question, optionsFor('tell_lights'), { speaker: 'Susie', timeoutSeconds: 16, defaultId: 'no' });
+            const answer = await askAs('john', LINES.triage.question, optionsFor('tell_lights'), { speaker: 'Susie', timeoutSeconds: 16, defaultId: 'no' });
             api.addChoice(C.tell_lights, CHOICE_META.tell_lights.label, answer);
             api.setFlag(F.john_told_lights, answer === 'yes');
             if (answer === 'yes') {
@@ -262,7 +267,7 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
             api.say(LINES.triage.seat, 2.6, 'Susie');
             await wait(3);
             s.audio.play('monitor_beep', { pos: v3(-7.4, 1.3, -4.6), volume: 0.4 });
-            await api.doc(vitalsDoc());
+            await docAs('susie', vitalsDoc());
             api.say(LINES.triage.vitals, 3.4, 'Susie');
             await wait(3.6);
             api.say(LINES.triage.question, 3, 'Susie');
@@ -534,7 +539,7 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
                 api.addClue(CLUE.impossible_vitals);
               }
               await wait(1.2);
-              const value = await api.ask("He's looking at you like he needs an answer.", optionsFor('believe_john'), { timeoutSeconds: 22, defaultId: 'sedate' });
+              const value = await askAs('susie', "He's looking at you like he needs an answer.", optionsFor('believe_john'), { timeoutSeconds: 22, defaultId: 'sedate' });
               await applyBelieve(value, true);
             } else {
               api.say("Pressure's coming down. Try to rest, okay? I'm right down the hall.", 3.6, 'Susie');
@@ -550,7 +555,7 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
             api.say('How are we doing, John?', 2.4, 'Susie');
             await wait(2.6);
             if (api.flag(DF.hall_figure_fired)) {
-              const tell = await api.ask(LINES.susieCheck.prompt, optionsFor('tell_figure'), { speaker: 'Susie', timeoutSeconds: 16, defaultId: 'no' });
+              const tell = await askAs('john', LINES.susieCheck.prompt, optionsFor('tell_figure'), { speaker: 'Susie', timeoutSeconds: 16, defaultId: 'no' });
               api.addChoice(C.tell_figure, CHOICE_META.tell_figure.label, tell);
               api.setFlag(F.john_told_figure, tell === 'yes');
               if (tell === 'yes') {
@@ -768,7 +773,7 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
               hooks.bumpFear?.('john', 0.14);
             } else if (v === 'susie') {
               await wait(0.8);
-              const value = await api.ask("Bay 2's monitor is alarming. Bay 3's call light just went on.", optionsFor('alvarez_or_john'), {
+              const value = await askAs('susie', "Bay 2's monitor is alarming. Bay 3's call light just went on.", optionsFor('alvarez_or_john'), {
                 timeoutSeconds: 18,
                 defaultId: 'alvarez',
               });
@@ -1024,7 +1029,7 @@ export function buildBeats(api: StoryApi, s: Services, hooks: BeatHooks = {}): G
             if (view() === 'susie') {
               api.say(LINES.crisis.susieElevator, 3.6, 'Susie');
               await wait(2.2);
-              const value = await api.ask('The elevator just opened on a dark cab.', optionsFor('hold_or_investigate'), { timeoutSeconds: 20, defaultId: 'hold' });
+              const value = await askAs('susie', 'The elevator just opened on a dark cab.', optionsFor('hold_or_investigate'), { timeoutSeconds: 20, defaultId: 'hold' });
               api.addChoice(C.hold_or_investigate, CHOICE_META.hold_or_investigate.label, value);
               if (value === 'hold') {
                 api.setFlag(F.susie_held_position);

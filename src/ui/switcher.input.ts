@@ -8,39 +8,43 @@
 import type { Action, InputManager } from '../core/input';
 
 export class ActionPoller {
-  private prev = new Map<Action, boolean>();
+  private prev = new Map<Action, number>();
 
   constructor(private readonly input: InputManager, private readonly actions: readonly Action[]) {
     this.reset();
   }
 
-  /** Snapshot the current held state so already-held keys do not register as edges. */
+  /** Snapshot press counts so presses made before the panel opened (the key that opened it) do not count. */
   reset(): void {
-    for (const a of this.actions) this.prev.set(a, this.safeDown(a));
+    for (const a of this.actions) this.prev.set(a, this.count(a));
   }
 
-  /** Actions that transitioned from released → held since the previous poll. */
+  /**
+   * Actions pressed since the previous poll. Counting presses (not sampling held state) means a tap that
+   * goes down and up between two frames still registers, however low the frame rate.
+   */
   poll(): Set<Action> {
     const edges = new Set<Action>();
     for (const a of this.actions) {
-      const now = this.safeDown(a);
-      if (now && !this.prev.get(a)) edges.add(a);
+      const now = this.count(a);
+      if (now > (this.prev.get(a) ?? 0)) edges.add(a);
       this.prev.set(a, now);
     }
     return edges;
+  }
+
+  private count(a: Action): number {
+    try {
+      return this.input.pressCount(a);
+    } catch {
+      return 0;
+    }
   }
 
   get gamepad(): boolean {
     return this.input.lastDeviceWasGamepad;
   }
 
-  private safeDown(a: Action): boolean {
-    try {
-      return this.input.down(a);
-    } catch {
-      return false;
-    }
-  }
 }
 
 /** Shared action set for menu-like panels. */
