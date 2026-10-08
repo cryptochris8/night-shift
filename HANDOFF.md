@@ -10,6 +10,7 @@ The build is complete and playable end to end. This note is for whoever picks it
 - First-night walkthrough (added after the first live playtest, where the opening felt unclear): look/walk → vending machine (E) → perspective console (Tab) → Susie → back to John → closing card, then once-per-night tips. Pure logic in `src/ui/tutorial.flow.ts` (unit-tested), card in `src/ui/tutorial.ts`; `node tools/tutorial.mjs` plays it with real input. Changed objectives now light up for a few seconds in the HUD.
 - Title briefing (added at the owner's request): the title screen explains the night (keep everyone accounted for, work out what is happening) and the four endings. An ElevenLabs narrator reads it aloud, the game's one recorded asset, while the text follows the voice line by line. It starts by itself after the first click or key until it has been heard through. `node tools/narration.mjs` re-records it from `src/ui/briefing.script.ts`; `node tools/briefing.mjs` checks it in a browser.
 - Code lives at https://github.com/cryptochris8/night-shift (public, branch `main`); keep local machine paths out of committed files.
+- Live build: https://night-shift-game.netlify.app, deployed by hand with `netlify deploy --prod` (it builds first). A push to GitHub does not update it.
 
 ## Not verified (needs a human)
 

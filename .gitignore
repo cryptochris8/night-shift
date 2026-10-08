@@ -11,3 +11,6 @@ test-results
 
 # ElevenLabs narration takes (tools/narration.mjs)
 tools/narration/cache
+
+# Local Netlify folder
+.netlify
