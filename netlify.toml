@@ -1,5 +1,6 @@
 # Netlify hosting: a static build. `npm run build` type-checks, then Vite writes dist/.
-# Redeploy from this folder with `netlify deploy --prod` (it runs the build first).
+# Netlify builds and publishes every push to main. `netlify deploy --prod` publishes the
+# local tree instead (it runs the build first).
 [build]
   command = "npm run build"
   publish = "dist"

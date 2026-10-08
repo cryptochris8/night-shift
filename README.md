@@ -44,7 +44,7 @@ npm run preview    # http://127.0.0.1:4173
 
 Requires a modern desktop browser with WebGL 2 (Chrome, Edge, Firefox). Headphones recommended. Contains flickering light.
 
-The live copy is a Netlify deploy, with its build settings in `netlify.toml`. From a checkout linked to the site, `netlify deploy --prod` builds the game and publishes it.
+The live copy is a Netlify deploy, with its build settings in `netlify.toml`. Every push to `main` rebuilds and republishes it.
 
 ## Controls
 
