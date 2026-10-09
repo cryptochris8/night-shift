@@ -3,7 +3,7 @@
  * transient figures). Nothing here is part of the public contract.
  */
 import type * as THREE from 'three';
-import type { FigureAnim, Outfit, Services } from '../core/contracts';
+import type { FaceKind, FigureAnim, Outfit, Services } from '../core/contracts';
 import type { CharacterId, RoomId, ScheduleEntry, Vec2, Vec3 } from '../core/types';
 import type { CollisionContext } from './collision';
 
@@ -22,7 +22,7 @@ export interface FigureLike {
   dispose(): void;
 }
 
-export type FigureCtor = new (opts: { outfit: Outfit; scale?: number; seed?: number }) => FigureLike;
+export type FigureCtor = new (opts: { outfit: Outfit; scale?: number; seed?: number; face?: FaceKind }) => FigureLike;
 
 export const EYE_HEIGHT = 1.65;
 export const PLAYER_RADIUS = 0.3;

@@ -8,6 +8,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { FigureAnim, Outfit } from '../core/contracts';
 import { RNG } from '../core/rng';
 import { AnimDriver, CH } from './Figure.anim';
+import { FACE_POINT, HEAD_R_REF, headGeometry, pickFace, pickHairStyle, type FacePreset } from './Figure.head';
 import {
   OUTFITS,
   PROP_MATS,
@@ -51,6 +52,9 @@ export class Figure {
   private readonly spec: OutfitSpec;
   private readonly dims: Dims;
   private readonly rng: RNG;
+  private readonly face: FacePreset;
+  /** sRGB hex, null for the hairless dark figure */
+  private hairColor: number | null = null;
   private readonly driver: AnimDriver;
   private readonly parts: Part[] = [];
   private readonly geometries = new Set<THREE.BufferGeometry>();
@@ -96,10 +100,11 @@ export class Figure {
   private readonly lieY: number;
   private readonly lieZ: number;
 
-  constructor(opts: { outfit: Outfit; scale?: number; seed?: number }) {
+  constructor(opts: { outfit: Outfit; scale?: number; seed?: number; face?: FacePreset }) {
     this.outfit = opts.outfit;
     this.spec = OUTFITS[opts.outfit];
     this.rng = new RNG(opts.seed ?? 0x51f);
+    this.face = opts.face ?? pickFace(this.rng.fork('face'), opts.outfit);
     const jitter = this.spec.jitterHeight && opts.seed !== undefined ? 1 + (this.rng.next() - 0.5) * 0.06 : 1;
     this.dims = computeDims(this.spec, jitter);
     this.driver = new AnimDriver(this.dims, this.rng.fork('anim'));
@@ -212,7 +217,9 @@ export class Figure {
   private buildMaterials(): void {
     const m = this.mats;
     for (const [role, spec] of Object.entries(this.spec.mats) as [BodyRole, MatSpec][]) m.set(role, sharedMaterial(spec));
-    m.set('hair', sharedMaterial(this.spec.hair ? pickHairSpec(this.rng, this.outfit) : this.spec.mats.skin));
+    this.hairColor = this.spec.hair ? pickHairSpec(this.rng, this.outfit).color : null;
+    // the sculpted head is painted per vertex (skin, hair, brows, eye shadow); the faceless one wears 'skin'
+    if (this.face !== 'blank') m.set('head', sharedMaterial({ ...this.spec.mats.skin, color: 0xffffff, vertexColors: true }));
     for (const [role, spec] of Object.entries(PROP_MATS) as [PropRole, MatSpec][]) {
       m.set(role, this.alwaysOwn.has(role) ? makeMaterial(spec) : sharedMaterial(spec));
     }
@@ -250,8 +257,9 @@ export class Figure {
     if (Math.abs(level - this.lastGlow) < 1e-3) return;
     this.lastGlow = level;
     if (!this.ownMats) return; // shared materials are never tinted
-    const skin = this.mats.get('skin');
-    if (skin) {
+    for (const role of ['skin', 'head'] as const) {
+      const skin = this.mats.get(role);
+      if (!skin) continue;
       skin.emissive.setHex(level > 0 ? PHONE_SKIN_GLOW : 0x000000);
       skin.emissiveIntensity = 0.9 * level;
     }
@@ -444,21 +452,16 @@ export class Figure {
     this.head.position.y = d.neckLen + 0.01;
     this.head.rotation.order = 'YXZ';
     this.neck.add(this.head);
-    const skull = new THREE.SphereGeometry(d.headR, 14, 11);
-    skull.scale(1, d.headScaleY, 1.04);
-    skull.translate(0, d.headR * d.headScaleY, -0.008);
-    const jaw = new THREE.SphereGeometry(d.headR * 0.8, 12, 9);
-    jaw.scale(0.95, 0.72, 0.92);
-    jaw.translate(0, d.headR * 0.42, -0.02);
-    this.part(this.head, this.merged(skull, jaw), 'skin');
-    if (this.spec.hair) {
-      const theta = this.rng.range(0.55, 0.68) * Math.PI;
-      const hair = new THREE.SphereGeometry(d.hairR, 12, 7, 0, TAU, 0, theta);
-      hair.scale(1, d.headScaleY, 1.04);
-      hair.rotateX(0.3); // hairline pushed back, nape covered
-      hair.translate(0, d.headR * d.headScaleY + 0.004, 0.004);
-      this.part(this.head, hair, 'hair');
-    }
+    // one sculpted, painted surface (see Figure.head.ts); its neck stub sits just inside the neck
+    const scale = d.headR / HEAD_R_REF;
+    const hairLine = this.spec.hair ? this.rng.next() : 0.5;
+    const stubR = (d.neckR * 0.95 - 0.001) / scale;
+    const paint = this.face === 'blank' ? null : {
+      skin: this.spec.mats.skin.color,
+      hair: this.hairColor,
+      style: this.hairColor === null ? null : pickHairStyle(this.rng.fork('hair'), this.outfit, hairLine, this.face),
+    };
+    this.part(this.head, this.reg(headGeometry(this.face, scale, Math.min(0.051, stubR), paint)), paint ? 'head' : 'skin');
   }
 
   // ---------------------------------------------------------------------------
@@ -739,7 +742,8 @@ export class Figure {
     } else {
       this.phoneGroup.scale.setScalar(ph);
       this.object.updateWorldMatrix(true, true);
-      tmpV.set(0, d.headR * d.headScaleY, -d.headR * 0.9);
+      const s = d.headR / HEAD_R_REF;
+      tmpV.set(FACE_POINT[0] * s, FACE_POINT[1] * s, FACE_POINT[2] * s);
       this.head.localToWorld(tmpV);
       this.phoneGroup.lookAt(tmpV);
     }

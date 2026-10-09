@@ -17,6 +17,7 @@ import type { RNG } from '../core/rng';
 import { CHARACTER_IDS, type CharacterId, type CharacterState, type DoorDef, type Rect, type RoomId, type ScheduleEntry, type Vec2, type Vec3, type ViewId } from '../core/types';
 import { LAYOUT, doorPassage, roomAt as layoutRoomAt } from '../world/layout';
 import { Figure } from './Figure';
+import { warmHeadShapes } from './Figure.head';
 import { NavGraph } from './nav';
 import { expandRect, pointInRect, rectsOverlap, type CollisionContext, type PassageDef } from './collision';
 import { canSeeFrom, type VisionWorld } from './CharacterSystem.vision';
@@ -139,6 +140,8 @@ export class CharacterSystem implements ICharacterSystem, Host {
       }
     }
 
+    // sample every face once while loading, so figures spawned mid-game never stall a frame
+    warmHeadShapes();
     this.bodies = {
       john: this.makeMainBody('john'),
       susie: this.makeMainBody('susie'),
@@ -397,7 +400,7 @@ export class CharacterSystem implements ICharacterSystem, Host {
       existing.dispose();
       this.figures.delete(id);
     }
-    const fig: FigureLike = new FigureClass({ outfit: opts.outfit, scale: opts.scale, seed: this.rng.int(1, 0x7fffffff) });
+    const fig: FigureLike = new FigureClass({ outfit: opts.outfit, scale: opts.scale, seed: this.rng.int(1, 0x7fffffff), face: opts.face });
     const tf = new TransientFigure(id, fig, opts, this.s.three.scene, (p) => this.canSee(p));
     this.figures.set(id, tf);
     tf.applyVisibility(this.viewFilter);

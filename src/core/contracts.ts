@@ -313,6 +313,8 @@ export interface IAudioEngine extends System {
 // ---------------------------------------------------------------------------
 
 export type Outfit = 'scrubs' | 'patient' | 'workwear' | 'security' | 'clerk' | 'coat' | 'dark' | 'child' | 'paramedic';
+/** Sculpted face presets ('soft' is the softer face with a bun; 'blank' is faceless). */
+export type FaceKind = 'plain' | 'strong' | 'long' | 'soft' | 'blank';
 export type FigureAnim = 'idle' | 'walk' | 'sit' | 'stand_still' | 'limp' | 'drag' | 'glitch' | 'lie' | 'work' | 'mop' | 'phone' | 'wrong_gait' | 'slow';
 
 export interface FigureOptions {
@@ -337,6 +339,8 @@ export interface FigureOptions {
   /** face the viewer */
   faceViewer?: boolean;
   scale?: number;
+  /** face preset; by default the figure picks one from its outfit and seed */
+  face?: FaceKind;
 }
 
 export interface FigureHandle {

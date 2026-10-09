@@ -16,14 +16,16 @@ export interface MatSpec {
   /** 0 = no environment reflections (matte) */
   envMapIntensity?: number;
   doubleSide?: boolean;
+  /** multiply by the geometry's vertex colours (the painted heads) */
+  vertexColors?: boolean;
 }
 
-/** Body material slots. 'hair' is picked per seed, everything else comes from the outfit palette. */
+/** Body material slots from the outfit palette. The head has its own painted material ('head'). */
 export type BodyRole =
   | 'skin' | 'top' | 'sleeve' | 'forearm' | 'trousers' | 'shin' | 'shoe' | 'sole'
   | 'collar' | 'accent' | 'lanyard' | 'badge' | 'belt' | 'metal' | 'radio' | 'stripe' | 'coat';
 export type PropRole = 'phoneBody' | 'phoneScreen' | 'mopHandle' | 'mopHead' | 'mopStrings';
-export type MatRole = BodyRole | 'hair' | PropRole;
+export type MatRole = BodyRole | 'head' | PropRole;
 
 export type Detail =
   | 'vneck_skin' | 'vneck_collar' | 'collar_ring' | 'lanyard' | 'pocket_l' | 'pocket_r' | 'pockets_coat'
@@ -227,7 +229,7 @@ export function pickHairSpec(rng: RNG, outfit: Outfit): MatSpec {
 const cache = new Map<string, THREE.MeshStandardMaterial>();
 
 function specKey(s: MatSpec): string {
-  return `${s.color}|${s.roughness}|${s.metalness ?? 0}|${s.emissive ?? 0}|${s.emissiveIntensity ?? 1}|${s.envMapIntensity ?? 1}|${s.doubleSide ? 2 : 1}`;
+  return `${s.color}|${s.roughness}|${s.metalness ?? 0}|${s.emissive ?? 0}|${s.emissiveIntensity ?? 1}|${s.envMapIntensity ?? 1}|${s.doubleSide ? 2 : 1}|${s.vertexColors ? 1 : 0}`;
 }
 
 export function makeMaterial(spec: MatSpec): THREE.MeshStandardMaterial {
@@ -238,6 +240,7 @@ export function makeMaterial(spec: MatSpec): THREE.MeshStandardMaterial {
     emissive: spec.emissive ?? 0x000000,
     emissiveIntensity: spec.emissiveIntensity ?? 1,
     side: spec.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+    vertexColors: spec.vertexColors ?? false,
   });
   m.envMapIntensity = spec.envMapIntensity ?? 1;
   return m;
@@ -290,8 +293,6 @@ export interface Dims {
   neckLen: number;
   neckR: number;
   headR: number;
-  headScaleY: number;
-  hairR: number;
   upperArmLen: number;
   forearmLen: number;
   handL: number;
@@ -339,8 +340,6 @@ export function computeDims(spec: OutfitSpec, heightMul: number): Dims {
     neckLen: 0.07 * s * spec.neckFactor,
     neckR: 0.055 * s,
     headR: 0.102 * headS,
-    headScaleY: 1.1,
-    hairR: 0.102 * headS * 1.06,
     upperArmLen: 0.29 * armS,
     forearmLen: 0.26 * armS,
     handL: 0.18 * armS,

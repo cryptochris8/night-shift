@@ -4,7 +4,7 @@
  * hallway every quarter hour until the lights go, and the two paramedics who pull away at 23:00.
  * Everything here is background texture — the ordinary life of the wing the anomalies subtract from.
  */
-import type { FigureHandle, Services } from '../core/contracts';
+import type { FaceKind, FigureHandle, Services } from '../core/contracts';
 import type { RNG } from '../core/rng';
 import type { PowerState, Vec2, Vec3 } from '../core/types';
 import { yawToward } from '../story/schedules';
@@ -49,7 +49,7 @@ export class NpcCast {
     this.add('npc_marcus', { pos: MARCUS_POS, yaw: 0, outfit: 'clerk', anim: 'work' });
     this.add('npc_haddad', { pos: HADDAD_SEAT, yaw: 0, outfit: 'patient', anim: 'sit' });
     // lying figures put their head toward local -z, so yaw pi lays them head-to-wall in beds whose head is +z
-    this.add('npc_alvarez', { pos: ALVAREZ_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie' });
+    this.add('npc_alvarez', { pos: ALVAREZ_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie', face: 'soft' });
     this.add('npc_okafor', { pos: OKAFOR_BED, yaw: Math.PI, outfit: 'patient', anim: 'lie' });
     const medicA = v3(-25.8, 0, -2.6);
     const medicB = v3(-27.5, 0, -2.9);
@@ -57,9 +57,9 @@ export class NpcCast {
     this.add('npc_medic_b', { pos: medicB, yaw: yawToward({ x: medicB.x, z: medicB.z }, AMBULANCE_REAR), outfit: 'paramedic', anim: 'idle' });
   }
 
-  private add(id: string, opts: { pos: Vec3; yaw: number; outfit: 'clerk' | 'patient' | 'paramedic' | 'security' | 'workwear' | 'dark'; anim: 'work' | 'sit' | 'lie' | 'idle' | 'walk' | 'slow' | 'stand_still' }): FigureHandle | null {
+  private add(id: string, opts: { pos: Vec3; yaw: number; outfit: 'clerk' | 'patient' | 'paramedic' | 'security' | 'workwear' | 'dark'; anim: 'work' | 'sit' | 'lie' | 'idle' | 'walk' | 'slow' | 'stand_still'; face?: FaceKind }): FigureHandle | null {
     try {
-      const h = this.s.characters.spawnFigure({ id, pos: opts.pos, yaw: opts.yaw, outfit: opts.outfit, anim: opts.anim, duration: 0 });
+      const h = this.s.characters.spawnFigure({ id, pos: opts.pos, yaw: opts.yaw, outfit: opts.outfit, anim: opts.anim, duration: 0, face: opts.face });
       this.figures.set(id, h);
       return h;
     } catch (err) {

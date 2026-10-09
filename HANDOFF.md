@@ -23,7 +23,7 @@ The build is complete and playable end to end. This note is for whoever picks it
 ## Known rough edges
 
 - Mirrors are dark panes (no true reflection); the mirror-lag anomaly is staged around that.
-- Procedural characters are deliberately featureless and kept at a distance or in low light.
+- Characters have simple sculpted faces (`src/characters/Figure.head.ts`) with the eyes left as shadowed hollows, so close up they read as mannequin-like rather than detailed. The dark figure is still faceless on purpose.
 - A few minor UI notes from the stylesheet agent: breaker switches that are locked give no click feedback (keyboard does), and a "SpO2 LOW" style monitor warning replaces the number instead of adding an alarm.
 
 ## Where to look
